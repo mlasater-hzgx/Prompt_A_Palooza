@@ -23,7 +23,6 @@ import {
   Settings as AdminIcon,
   ChevronLeft as CollapseIcon,
   ChevronRight as ExpandIcon,
-  Menu as MenuIcon,
 } from '@mui/icons-material';
 import { useUiStore } from '../../store/ui.store';
 import { useAuthStore } from '../../store/auth.store';

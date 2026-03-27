@@ -25,7 +25,7 @@ export function errorHandler(
 
   // Prisma known errors
   if (err.constructor.name === 'PrismaClientKnownRequestError') {
-    const prismaErr = err as { code: string; meta?: { target?: string[] } };
+    const prismaErr = err as unknown as { code: string; meta?: { target?: string[] } };
     if (prismaErr.code === 'P2002') {
       const target = prismaErr.meta?.target?.join(', ') ?? 'field';
       return sendError(res, `A record with this ${target} already exists`, 409);

@@ -34,3 +34,5 @@ backend/prisma/*.db-journal
 # Temp
 tmp/
 temp/
+node_modules/
+frontend/dist/
