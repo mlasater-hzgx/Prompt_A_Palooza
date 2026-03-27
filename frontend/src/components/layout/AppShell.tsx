@@ -2,6 +2,7 @@ import { Outlet } from 'react-router';
 import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
+import { OfflineBanner } from '../feedback/OfflineBanner';
 import { useUiStore } from '../../store/ui.store';
 
 export function AppShell() {
@@ -27,6 +28,7 @@ export function AppShell() {
         }}
       >
         <TopBar />
+        <OfflineBanner />
         <Box sx={{ flexGrow: 1, p: { xs: 2, md: 3 }, maxWidth: 1536, width: '100%', mx: 'auto' }}>
           <Outlet />
         </Box>

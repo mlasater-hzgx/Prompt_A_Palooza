@@ -1,5 +1,6 @@
 import { Box, IconButton, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { Menu as MenuIcon, Notifications as NotifIcon } from '@mui/icons-material';
+import { SyncStatusIndicator } from '../feedback/SyncStatusIndicator';
 import { useUiStore } from '../../store/ui.store';
 import { useAuthStore } from '../../store/auth.store';
 
@@ -30,6 +31,8 @@ export function TopBar() {
       )}
 
       <Box sx={{ flexGrow: 1 }} />
+
+      <SyncStatusIndicator />
 
       <IconButton aria-label="Notifications">
         <NotifIcon />
