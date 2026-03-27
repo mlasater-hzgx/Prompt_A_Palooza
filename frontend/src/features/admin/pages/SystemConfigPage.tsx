@@ -58,7 +58,7 @@ function useSystemConfig() {
   return useQuery({
     queryKey: ['admin', 'system-config'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/admin/system-config');
+      const { data } = await apiClient.get('/config/system');
       return data;
     },
   });
@@ -68,7 +68,7 @@ function useUpdateConfig() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...body }: { id: string } & Omit<EditFormState, 'key'>) => {
-      const { data } = await apiClient.put(`/admin/system-config/${id}`, body);
+      const { data } = await apiClient.put('/config/system', body);
       return data;
     },
     onSuccess: () => {

@@ -64,7 +64,7 @@ function useProjects() {
   return useQuery({
     queryKey: ['admin', 'projects'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/admin/projects');
+      const { data } = await apiClient.get('/config/projects');
       return data;
     },
   });
@@ -74,7 +74,7 @@ function useCreateProject() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (body: ProjectFormState) => {
-      const { data } = await apiClient.post('/admin/projects', body);
+      const { data } = await apiClient.post('/config/projects', body);
       return data;
     },
     onSuccess: () => {
@@ -87,7 +87,7 @@ function useUpdateProject() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...body }: { id: string } & ProjectFormState) => {
-      const { data } = await apiClient.put(`/admin/projects/${id}`, body);
+      const { data } = await apiClient.put(`/config/projects/${body.projectNumber}`, body);
       return data;
     },
     onSuccess: () => {

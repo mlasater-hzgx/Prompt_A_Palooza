@@ -83,7 +83,7 @@ function useUsers(search: string) {
     queryKey: ['admin', 'users', search],
     queryFn: async () => {
       const params = search ? `?search=${encodeURIComponent(search)}` : '';
-      const { data } = await apiClient.get(`/admin/users${params}`);
+      const { data } = await apiClient.get(`/users${params}`);
       return data;
     },
   });
@@ -93,7 +93,7 @@ function useUpdateUser() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...body }: { id: string } & EditFormState) => {
-      const { data } = await apiClient.put(`/admin/users/${id}`, body);
+      const { data } = await apiClient.put(`/users/${id}`, body);
       return data;
     },
     onSuccess: () => {
@@ -106,7 +106,7 @@ function useToggleUserActive() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
-      const { data } = await apiClient.patch(`/admin/users/${id}/active`, { isActive });
+      const { data } = await apiClient.put(`/users/${id}`, { isActive });
       return data;
     },
     onSuccess: () => {

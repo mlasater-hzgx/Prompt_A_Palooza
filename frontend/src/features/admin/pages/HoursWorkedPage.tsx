@@ -69,7 +69,7 @@ function useHoursWorked(year: number) {
   return useQuery({
     queryKey: ['admin', 'hours-worked', year],
     queryFn: async () => {
-      const { data } = await apiClient.get(`/admin/hours-worked?year=${year}`);
+      const { data } = await apiClient.get(`/config/hours-worked?year=${year}`);
       return data;
     },
   });
@@ -79,7 +79,7 @@ function useCreateHoursEntry() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (body: EntryFormState) => {
-      const { data } = await apiClient.post('/admin/hours-worked', body);
+      const { data } = await apiClient.put('/config/hours-worked', body);
       return data;
     },
     onSuccess: () => {
@@ -92,7 +92,7 @@ function useUpdateHoursEntry() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...body }: { id: string } & EntryFormState) => {
-      const { data } = await apiClient.put(`/admin/hours-worked/${id}`, body);
+      const { data } = await apiClient.put('/config/hours-worked', body);
       return data;
     },
     onSuccess: () => {

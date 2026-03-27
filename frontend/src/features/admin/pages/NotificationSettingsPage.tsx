@@ -69,7 +69,7 @@ function useNotificationRules() {
   return useQuery({
     queryKey: ['admin', 'notification-rules'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/admin/notification-rules');
+      const { data } = await apiClient.get('/config/notification-rules');
       return data;
     },
   });
@@ -79,7 +79,7 @@ function useCreateNotificationRule() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (body: RuleFormState) => {
-      const { data } = await apiClient.post('/admin/notification-rules', body);
+      const { data } = await apiClient.put('/config/notification-rules', body);
       return data;
     },
     onSuccess: () => {
@@ -92,7 +92,7 @@ function useUpdateNotificationRule() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...body }: { id: string } & RuleFormState) => {
-      const { data } = await apiClient.put(`/admin/notification-rules/${id}`, body);
+      const { data } = await apiClient.put('/config/notification-rules', body);
       return data;
     },
     onSuccess: () => {

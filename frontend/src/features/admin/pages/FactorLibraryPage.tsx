@@ -80,7 +80,7 @@ function useFactors() {
   return useQuery({
     queryKey: ['admin', 'factors'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/admin/factors');
+      const { data } = await apiClient.get('/config/factor-types');
       return data;
     },
   });
@@ -90,7 +90,7 @@ function useCreateFactor() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (body: FactorFormState) => {
-      const { data } = await apiClient.post('/admin/factors', body);
+      const { data } = await apiClient.post('/config/factor-types', body);
       return data;
     },
     onSuccess: () => {
@@ -103,7 +103,7 @@ function useUpdateFactor() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...body }: { id: string } & FactorFormState) => {
-      const { data } = await apiClient.put(`/admin/factors/${id}`, body);
+      const { data } = await apiClient.put(`/config/factor-types/${id}`, body);
       return data;
     },
     onSuccess: () => {
@@ -116,7 +116,7 @@ function useToggleFactorActive() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
-      const { data } = await apiClient.patch(`/admin/factors/${id}/active`, { isActive });
+      const { data } = await apiClient.put(`/config/factor-types/${id}`, { isActive });
       return data;
     },
     onSuccess: () => {
