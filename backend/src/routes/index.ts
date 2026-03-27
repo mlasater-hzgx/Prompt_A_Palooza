@@ -13,6 +13,7 @@ import { recurrenceRoutes } from './recurrence.routes';
 import { oshaRoutes } from './osha.routes';
 import { dashboardRoutes } from './dashboard.routes';
 import { analyticsRoutes } from './analytics.routes';
+import { reportRoutes } from './reports.routes';
 
 const router = Router();
 
@@ -51,6 +52,9 @@ router.use('/osha', oshaRoutes);
 // Dashboard & Analytics
 router.use('/dashboard', dashboardRoutes);
 router.use('/analytics', analyticsRoutes);
+
+// Reports (OSHA 300/300A/301)
+router.use('/reports', reportRoutes);
 
 // API root
 router.get('/', (_req, res) => {
