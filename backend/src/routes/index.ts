@@ -2,17 +2,22 @@ import { Router } from 'express';
 import { userRoutes } from './users.routes';
 import { configRoutes } from './config.routes';
 import { notificationRoutes } from './notifications.routes';
+import { incidentRoutes } from './incidents.routes';
+import { investigationRoutes } from './investigations.routes';
+import { rootCauseRoutes } from './root-cause.routes';
+import { contributingFactorRoutes } from './contributing-factors.routes';
+import { capaRoutes } from './capas.routes';
+import { injuredPersonRoutes } from './injured-persons.routes';
+import { witnessStatementRoutes } from './witness-statements.routes';
+import { recurrenceRoutes } from './recurrence.routes';
+import { oshaRoutes } from './osha.routes';
 
 const router = Router();
 
-// Operational routes (to be added in Phase 2)
-// router.use('/incidents', incidentRoutes);
-// router.use('/investigations', investigationRoutes);
-// router.use('/capas', capaRoutes);
-// router.use('/dashboard', dashboardRoutes);
-// router.use('/analytics', analyticsRoutes);
-// router.use('/recurrence', recurrenceRoutes);
-// router.use('/reports', reportRoutes);
+// Operational routes
+router.use('/incidents', incidentRoutes);
+router.use('/investigations', investigationRoutes);
+router.use('/capas', capaRoutes);
 
 // User management
 router.use('/users', userRoutes);
@@ -22,6 +27,24 @@ router.use('/config', configRoutes);
 
 // Notifications
 router.use('/notifications', notificationRoutes);
+
+// Root-cause analysis (five-why & fishbone)
+router.use('/root-cause', rootCauseRoutes);
+
+// Contributing factors
+router.use('/', contributingFactorRoutes);
+
+// Injured persons
+router.use('/injured-persons', injuredPersonRoutes);
+
+// Witness statements
+router.use('/witness-statements', witnessStatementRoutes);
+
+// Recurrence
+router.use('/recurrence', recurrenceRoutes);
+
+// OSHA
+router.use('/osha', oshaRoutes);
 
 // API root
 router.get('/', (_req, res) => {
