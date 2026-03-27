@@ -2,6 +2,7 @@ import { useState, useCallback, type SyntheticEvent } from 'react';
 import {
   Alert,
   Box,
+  Button,
   Card,
   CardContent,
   Chip,
@@ -130,13 +131,14 @@ function formatDate(dateStr: string | null | undefined): string {
 // Incident Links Tab
 // ---------------------------------------------------------------------------
 
-function LinksTab() {
+function LinksTab({ typeFilter, onClearFilter }: { typeFilter: string | null; onClearFilter: () => void }) {
   const navigate = useNavigate();
   const { data, isLoading, isError, error } = useRecurrenceLinks();
   const dismissLink = useDismissLink();
 
   const links: RecurrenceLink[] = data?.data ?? [];
   const activeLinks = links.filter((l) => !l.isDismissed);
+  const filteredLinks = typeFilter ? activeLinks.filter((l) => l.similarityType === typeFilter) : activeLinks;
 
   const handleDismiss = async (linkId: string) => {
     await dismissLink.mutateAsync(linkId);
@@ -176,6 +178,19 @@ function LinksTab() {
 
   return (
     <>
+      {typeFilter && (
+        <Alert
+          severity="info"
+          sx={{ mb: 2 }}
+          action={
+            <Button color="inherit" size="small" onClick={onClearFilter}>
+              Show All
+            </Button>
+          }
+        >
+          Filtered by: <strong>{SIMILARITY_TYPES[typeFilter]?.label ?? typeFilter}</strong> ({filteredLinks.length} of {activeLinks.length} links)
+        </Alert>
+      )}
       {dismissLink.isError && (
         <Alert severity="error" sx={{ mb: 2 }}>
           Failed to dismiss link. Please try again.
@@ -196,7 +211,7 @@ function LinksTab() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {activeLinks.map((link) => {
+              {filteredLinks.map((link) => {
                 const sim = SIMILARITY_TYPES[link.similarityType];
                 return (
                   <TableRow key={link.id} hover>
@@ -301,7 +316,7 @@ function LinksTab() {
 // Clusters Tab
 // ---------------------------------------------------------------------------
 
-function ClustersTab() {
+function ClustersTab({ onClusterClick }: { onClusterClick: (type: string) => void }) {
   const { data, isLoading, isError, error } = useRecurrenceClusters();
 
   if (isLoading) {
@@ -367,7 +382,10 @@ function ClustersTab() {
               sx={{
                 height: '100%',
                 borderLeft: `4px solid ${info.color}`,
+                cursor: 'pointer',
+                '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.1)' },
               }}
+              onClick={() => onClusterClick(cluster.similarityType)}
             >
               <CardContent>
                 <Box
@@ -397,6 +415,9 @@ function ClustersTab() {
                     : `${cluster.count} pairs of linked incidents`}
                   {' '}share this pattern.
                 </Typography>
+                <Typography variant="body2" sx={{ color: colors.action.navyBlue, mt: 1, fontWeight: 500 }}>
+                  Click to view linked incidents &rarr;
+                </Typography>
               </CardContent>
             </Card>
           </Grid>
@@ -412,13 +433,20 @@ function ClustersTab() {
 
 export function Component() {
   const [tabValue, setTabValue] = useState(0);
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
 
   const handleTabChange = useCallback(
     (_: SyntheticEvent, newValue: number) => {
       setTabValue(newValue);
+      if (newValue !== 0) setTypeFilter(null); // clear filter when leaving links tab
     },
     [],
   );
+
+  const handleClusterClick = useCallback((similarityType: string) => {
+    setTypeFilter(similarityType);
+    setTabValue(0); // switch to Links tab
+  }, []);
 
   return (
     <PageContainer title="Recurrence Detection">
@@ -443,11 +471,11 @@ export function Component() {
       </Box>
 
       <TabPanel value={tabValue} index={0}>
-        <LinksTab />
+        <LinksTab typeFilter={typeFilter} onClearFilter={() => setTypeFilter(null)} />
       </TabPanel>
 
       <TabPanel value={tabValue} index={1}>
-        <ClustersTab />
+        <ClustersTab onClusterClick={handleClusterClick} />
       </TabPanel>
     </PageContainer>
   );
