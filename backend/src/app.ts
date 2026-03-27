@@ -7,6 +7,9 @@ import { config } from './config';
 import { logger } from './utils/logger';
 import { errorHandler } from './middleware/error-handler';
 import { rateLimiter } from './config/rate-limit';
+import { authMiddleware } from './middleware/auth';
+import { auditLogMiddleware } from './middleware/audit-log';
+import { scopeMiddleware } from './middleware/project-scope';
 import { routes } from './routes';
 
 export function createApp() {
@@ -26,6 +29,15 @@ export function createApp() {
 
   // Rate limiting
   app.use('/api', rateLimiter);
+
+  // Auth (all /api routes)
+  app.use('/api', authMiddleware);
+
+  // Project/division scoping
+  app.use('/api', scopeMiddleware);
+
+  // Audit logging (mutating requests)
+  app.use('/api', auditLogMiddleware);
 
   // Routes
   app.use('/api', routes);
