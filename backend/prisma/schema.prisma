@@ -1,0 +1,659 @@
+// ============================================================================
+// Incident Investigation & Corrective Action System - Prisma Schema
+// ============================================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum Division {
+  HCC
+  HRSI
+  HSI
+  HTI
+  HTSI
+  HERZOG_ENERGY
+  GREEN_GROUP
+}
+
+enum IncidentType {
+  INJURY
+  NEAR_MISS
+  PROPERTY_DAMAGE
+  ENVIRONMENTAL
+  VEHICLE
+  FIRE
+  UTILITY_STRIKE
+}
+
+enum Severity {
+  FIRST_AID
+  MEDICAL_TREATMENT
+  RESTRICTED_DUTY
+  LOST_TIME
+  FATALITY
+  NEAR_MISS
+  PROPERTY_ONLY
+}
+
+enum Shift {
+  DAY
+  NIGHT
+  SWING
+}
+
+enum IncidentStatus {
+  REPORTED
+  UNDER_INVESTIGATION
+  INVESTIGATION_COMPLETE
+  CAPA_ASSIGNED
+  CAPA_IN_PROGRESS
+  CLOSED
+  REOPENED
+}
+
+enum InjuryType {
+  LACERATION
+  FRACTURE
+  STRAIN_SPRAIN
+  CONTUSION
+  BURN
+  AMPUTATION
+  RESPIRATORY
+  HEARING
+  EYE
+  OTHER
+}
+
+enum BodyPart {
+  HEAD
+  EYES
+  NECK
+  SHOULDER
+  ARM
+  HAND
+  FINGER
+  BACK
+  CHEST
+  ABDOMEN
+  HIP
+  LEG
+  KNEE
+  FOOT
+  TOE
+  MULTIPLE
+}
+
+enum Side {
+  LEFT
+  RIGHT
+  BOTH
+  NA
+}
+
+enum TreatmentType {
+  NONE
+  FIRST_AID
+  ER_VISIT
+  HOSPITALIZATION
+  ONGOING_TREATMENT
+}
+
+enum InvestigationStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  PENDING_REVIEW
+  COMPLETE
+}
+
+enum RootCauseMethod {
+  FIVE_WHY
+  FISHBONE
+  BOTH
+}
+
+enum FishboneCategory {
+  PEOPLE
+  PROCESS
+  EQUIPMENT
+  MATERIALS
+  ENVIRONMENT
+  MANAGEMENT
+}
+
+enum FactorCategory {
+  HUMAN_FACTORS
+  EQUIPMENT_TOOLS
+  ENVIRONMENTAL
+  PROCEDURAL
+  MANAGEMENT_ORGANIZATIONAL
+}
+
+enum ActionType {
+  CORRECTIVE
+  PREVENTIVE
+}
+
+enum CapaCategory {
+  TRAINING
+  PROCEDURE_CHANGE
+  ENGINEERING_CONTROL
+  PPE
+  EQUIPMENT_MODIFICATION
+  DISCIPLINARY
+  POLICY_CHANGE
+  OTHER
+}
+
+enum CapaPriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum CapaStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  VERIFICATION_PENDING
+  VERIFIED_EFFECTIVE
+  VERIFIED_INEFFECTIVE
+  OVERDUE
+}
+
+enum VerificationResult {
+  EFFECTIVE
+  PARTIALLY_EFFECTIVE
+  INEFFECTIVE
+}
+
+enum SimilarityType {
+  SAME_LOCATION
+  SAME_TYPE
+  SAME_ROOT_CAUSE
+  SAME_EQUIPMENT
+  SAME_PERSON
+}
+
+enum DetectedBy {
+  SYSTEM
+  MANUAL
+}
+
+enum RailroadClient {
+  BNSF
+  UP
+  CSX
+  NS
+  CN
+  KCS
+  NA
+}
+
+enum ReviewAction {
+  APPROVED
+  RETURNED
+}
+
+enum Role {
+  FIELD_REPORTER
+  SAFETY_COORDINATOR
+  SAFETY_MANAGER
+  PROJECT_MANAGER
+  DIVISION_MANAGER
+  EXECUTIVE
+  ADMINISTRATOR
+}
+
+enum NotificationType {
+  INCIDENT_REPORTED
+  INVESTIGATION_ASSIGNED
+  INVESTIGATION_OVERDUE
+  CAPA_ASSIGNED
+  CAPA_OVERDUE
+  CAPA_VERIFICATION_DUE
+  CLIENT_DEADLINE
+  RECURRENCE_DETECTED
+}
+
+// ============================================================================
+// MODELS
+// ============================================================================
+
+model User {
+  id        String    @id @default(uuid()) @db.Uuid
+  azureAdId String    @unique @map("azure_ad_id")
+  email     String    @unique
+  name      String
+  role      Role
+  division  Division?
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  reportedIncidents      Incident[]         @relation("IncidentReportedBy")
+  ledInvestigations      Investigation[]    @relation("InvestigationLeadInvestigator")
+  reviewedInvestigations Investigation[]    @relation("InvestigationReviewedBy")
+  assignedCapas          Capa[]             @relation("CapaAssignedTo")
+  verifiedCapas          Capa[]             @relation("CapaVerifiedBy")
+  collectedStatements    WitnessStatement[] @relation("StatementCollectedBy")
+  auditLogs              AuditLog[]         @relation("AuditLogUser")
+  notifications          Notification[]     @relation("NotificationUser")
+  userProjects           UserProject[]      @relation("UserProjectUser")
+  oshaOverrides          Incident[]         @relation("IncidentOshaOverrideBy")
+
+  @@map("users")
+}
+
+model Project {
+  id            String   @id @default(uuid()) @db.Uuid
+  projectNumber String   @unique @map("project_number")
+  name          String
+  division      Division
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  incidents    Incident[]    @relation("IncidentProject")
+  userProjects UserProject[] @relation("UserProjectProject")
+
+  @@map("projects")
+}
+
+model UserProject {
+  id            String @id @default(uuid()) @db.Uuid
+  userId        String @map("user_id") @db.Uuid
+  projectNumber String @map("project_number")
+
+  // Relations
+  user    User    @relation("UserProjectUser", fields: [userId], references: [id])
+  project Project @relation("UserProjectProject", fields: [projectNumber], references: [projectNumber])
+
+  @@unique([userId, projectNumber])
+  @@map("user_projects")
+}
+
+model Incident {
+  id                        String          @id @default(uuid()) @db.Uuid
+  incidentNumber            String          @unique @map("incident_number")
+  title                     String
+  incidentType              IncidentType    @map("incident_type")
+  incidentDate              DateTime        @map("incident_date") @db.Date
+  incidentTime              DateTime?       @map("incident_time") @db.Time()
+  reportedDate              DateTime        @default(now()) @map("reported_date")
+  reportedById              String          @map("reported_by_id") @db.Uuid
+  division                  Division
+  projectNumber             String?         @map("project_number")
+  jobSite                   String?         @map("job_site")
+  locationDescription       String?         @map("location_description")
+  latitude                  Decimal?        @db.Decimal(9, 6)
+  longitude                 Decimal?        @db.Decimal(9, 6)
+  description               String          @db.Text
+  immediateActionsTaken     String?         @map("immediate_actions_taken")
+  weatherConditions         String?         @map("weather_conditions")
+  shift                     Shift?
+  severity                  Severity?
+  potentialSeverity         Severity?       @map("potential_severity")
+  status                    IncidentStatus  @default(REPORTED)
+  isOshaRecordable          Boolean?        @map("is_osha_recordable")
+  oshaCaseNumber            String?         @map("osha_case_number")
+  isDart                    Boolean?        @map("is_dart")
+  daysAway                  Int?            @default(0) @map("days_away")
+  daysRestricted            Int?            @default(0) @map("days_restricted")
+  daysTransfer              Int?            @default(0) @map("days_transfer")
+  clientReported            Boolean?        @map("client_reported")
+  clientReportDate          DateTime?       @map("client_report_date")
+  railroadClient            RailroadClient? @map("railroad_client")
+  photos                    String[]
+  oshaOverrideValue         Boolean?        @map("osha_override_value")
+  oshaOverrideJustification String?         @map("osha_override_justification")
+  oshaOverrideById          String?         @map("osha_override_by_id") @db.Uuid
+  oshaOverrideAt            DateTime?       @map("osha_override_at")
+  completionPercentage      Int             @default(0) @map("completion_percentage")
+  isDraft                   Boolean         @default(true) @map("is_draft")
+  createdAt                 DateTime        @default(now()) @map("created_at")
+  updatedAt                 DateTime        @updatedAt @map("updated_at")
+  syncedAt                  DateTime?       @map("synced_at")
+
+  // Relations
+  reportedBy          User                 @relation("IncidentReportedBy", fields: [reportedById], references: [id])
+  project             Project?             @relation("IncidentProject", fields: [projectNumber], references: [projectNumber])
+  oshaOverrideBy      User?                @relation("IncidentOshaOverrideBy", fields: [oshaOverrideById], references: [id])
+  injuredPersons      InjuredPerson[]      @relation("InjuredPersonIncident")
+  witnessStatements   WitnessStatement[]   @relation("WitnessStatementIncident")
+  investigation       Investigation?       @relation("InvestigationIncident")
+  contributingFactors ContributingFactor[] @relation("ContributingFactorIncident")
+  capas               Capa[]               @relation("CapaIncident")
+  recurrenceLinksFrom RecurrenceLink[]     @relation("RecurrenceLinkFrom")
+  recurrenceLinksTo   RecurrenceLink[]     @relation("RecurrenceLinkTo")
+  auditLogs           AuditLog[]           @relation("AuditLogIncident")
+  notifications       Notification[]       @relation("NotificationIncident")
+
+  @@index([incidentType], map: "idx_incidents_incident_type")
+  @@index([status], map: "idx_incidents_status")
+  @@index([division], map: "idx_incidents_division")
+  @@index([incidentDate], map: "idx_incidents_incident_date")
+  @@index([severity], map: "idx_incidents_severity")
+  @@index([isOshaRecordable], map: "idx_incidents_is_osha_recordable")
+  @@index([jobSite], map: "idx_incidents_job_site")
+  @@index([railroadClient], map: "idx_incidents_railroad_client")
+  @@index([reportedById], map: "idx_incidents_reported_by_id")
+  @@index([projectNumber], map: "idx_incidents_project_number")
+  @@map("incidents")
+}
+
+model InjuredPerson {
+  id                   String         @id @default(uuid()) @db.Uuid
+  incidentId           String         @map("incident_id") @db.Uuid
+  employeeId           String?        @map("employee_id")
+  name                 String /// @encrypted
+  jobTitle             String?        @map("job_title")
+  division             Division?
+  yearsExperience      Decimal?       @map("years_experience") @db.Decimal(4, 1)
+  injuryType           InjuryType?    @map("injury_type")
+  bodyPart             BodyPart?      @map("body_part")
+  side                 Side?
+  treatmentType        TreatmentType? @map("treatment_type")
+  treatmentFacility    String?        @map("treatment_facility") /// @encrypted
+  physician            String? /// @encrypted
+  returnedToWork       Boolean?       @map("returned_to_work")
+  returnDate           DateTime?      @map("return_date") @db.Date
+  isSubcontractor      Boolean        @default(false) @map("is_subcontractor")
+  subcontractorCompany String?        @map("subcontractor_company")
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  incident Incident @relation("InjuredPersonIncident", fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId], map: "idx_injured_persons_incident_id")
+  @@index([employeeId], map: "idx_injured_persons_employee_id")
+  @@map("injured_persons")
+}
+
+model WitnessStatement {
+  id              String    @id @default(uuid()) @db.Uuid
+  incidentId      String    @map("incident_id") @db.Uuid
+  witnessName     String    @map("witness_name")
+  witnessTitle    String?   @map("witness_title")
+  witnessEmployer String?   @map("witness_employer")
+  witnessPhone    String?   @map("witness_phone")
+  statementDate   DateTime? @map("statement_date") @db.Date
+  statementText   String    @map("statement_text")
+  collectedById   String?   @map("collected_by_id") @db.Uuid
+
+  // Relations
+  incident    Incident @relation("WitnessStatementIncident", fields: [incidentId], references: [id], onDelete: Cascade)
+  collectedBy User?    @relation("StatementCollectedBy", fields: [collectedById], references: [id])
+
+  @@index([incidentId], map: "idx_witness_statements_incident_id")
+  @@map("witness_statements")
+}
+
+model Investigation {
+  id                   String              @id @default(uuid()) @db.Uuid
+  incidentId           String              @unique @map("incident_id") @db.Uuid
+  leadInvestigatorId   String?             @map("lead_investigator_id") @db.Uuid
+  investigationTeam    String[]            @default([]) @map("investigation_team")
+  startedDate          DateTime?           @map("started_date") @db.Date
+  completedDate        DateTime?           @map("completed_date") @db.Date
+  targetCompletionDate DateTime?           @map("target_completion_date") @db.Date
+  status               InvestigationStatus @default(NOT_STARTED)
+  investigationSummary String?             @map("investigation_summary")
+  rootCauseMethod      RootCauseMethod?    @map("root_cause_method")
+  rootCauseSummary     String?             @map("root_cause_summary")
+  recommendations      String?
+  reviewedById         String?             @map("reviewed_by_id") @db.Uuid
+  reviewedDate         DateTime?           @map("reviewed_date") @db.Date
+  reviewComments       String?             @map("review_comments")
+  reviewAction         ReviewAction?       @map("review_action")
+
+  // Relations
+  incident         Incident          @relation("InvestigationIncident", fields: [incidentId], references: [id])
+  leadInvestigator User?             @relation("InvestigationLeadInvestigator", fields: [leadInvestigatorId], references: [id])
+  reviewedBy       User?             @relation("InvestigationReviewedBy", fields: [reviewedById], references: [id])
+  fiveWhyEntries   FiveWhyAnalysis[] @relation("FiveWhyInvestigation")
+  fishboneFactors  FishboneFactor[]  @relation("FishboneFactorInvestigation")
+  capas            Capa[]            @relation("CapaInvestigation")
+
+  @@index([status], map: "idx_investigations_status")
+  @@index([leadInvestigatorId], map: "idx_investigations_lead_investigator_id")
+  @@index([targetCompletionDate], map: "idx_investigations_target_completion_date")
+  @@map("investigations")
+}
+
+model FiveWhyAnalysis {
+  id              String   @id @default(uuid()) @db.Uuid
+  investigationId String   @map("investigation_id") @db.Uuid
+  sequence        Int
+  question        String
+  answer          String
+  evidence        String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  investigation Investigation @relation("FiveWhyInvestigation", fields: [investigationId], references: [id], onDelete: Cascade)
+
+  @@unique([investigationId, sequence])
+  @@map("five_why_analyses")
+}
+
+model FishboneFactor {
+  id              String           @id @default(uuid()) @db.Uuid
+  investigationId String           @map("investigation_id") @db.Uuid
+  category        FishboneCategory
+  description     String
+  isContributing  Boolean          @default(false) @map("is_contributing")
+  evidence        String?
+  sortOrder       Int              @default(0) @map("sort_order")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  // Relations
+  investigation Investigation @relation("FishboneFactorInvestigation", fields: [investigationId], references: [id], onDelete: Cascade)
+
+  @@index([investigationId], map: "idx_fishbone_factors_investigation_id")
+  @@index([category], map: "idx_fishbone_factors_category")
+  @@map("fishbone_factors")
+}
+
+model FactorType {
+  id          String         @id @default(uuid()) @db.Uuid
+  name        String         @unique
+  category    FactorCategory
+  description String?
+  isActive    Boolean        @default(true) @map("is_active")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  contributingFactors ContributingFactor[] @relation("ContributingFactorType")
+
+  @@index([category], map: "idx_factor_types_category")
+  @@map("factor_types")
+}
+
+model ContributingFactor {
+  id           String   @id @default(uuid()) @db.Uuid
+  incidentId   String   @map("incident_id") @db.Uuid
+  factorTypeId String   @map("factor_type_id") @db.Uuid
+  description  String?
+  isPrimary    Boolean  @default(false) @map("is_primary")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  incident   Incident   @relation("ContributingFactorIncident", fields: [incidentId], references: [id], onDelete: Cascade)
+  factorType FactorType @relation("ContributingFactorType", fields: [factorTypeId], references: [id])
+
+  @@index([incidentId], map: "idx_contributing_factors_incident_id")
+  @@index([factorTypeId], map: "idx_contributing_factors_factor_type_id")
+  @@map("contributing_factors")
+}
+
+model Capa {
+  id                  String              @id @default(uuid()) @db.Uuid
+  incidentId          String              @map("incident_id") @db.Uuid
+  investigationId     String?             @map("investigation_id") @db.Uuid
+  capaNumber          String              @unique @map("capa_number")
+  title               String
+  description         String?
+  actionType          ActionType          @map("action_type")
+  category            CapaCategory
+  assignedToId        String?             @map("assigned_to_id") @db.Uuid
+  assignedDate        DateTime?           @map("assigned_date") @db.Date
+  dueDate             DateTime            @map("due_date") @db.Date
+  priority            CapaPriority
+  status              CapaStatus          @default(OPEN)
+  completedDate       DateTime?           @map("completed_date") @db.Date
+  completionNotes     String?             @map("completion_notes")
+  completionEvidence  String[]            @default([]) @map("completion_evidence")
+  verificationMethod  String?             @map("verification_method")
+  verificationDueDate DateTime?           @map("verification_due_date") @db.Date
+  verifiedById        String?             @map("verified_by_id") @db.Uuid
+  verifiedDate        DateTime?           @map("verified_date") @db.Date
+  verificationResult  VerificationResult? @map("verification_result")
+  verificationNotes   String?             @map("verification_notes")
+  cost                Decimal?            @db.Decimal(10, 2)
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  incident      Incident       @relation("CapaIncident", fields: [incidentId], references: [id])
+  investigation Investigation? @relation("CapaInvestigation", fields: [investigationId], references: [id])
+  assignedTo    User?          @relation("CapaAssignedTo", fields: [assignedToId], references: [id])
+  verifiedBy    User?          @relation("CapaVerifiedBy", fields: [verifiedById], references: [id])
+
+  @@index([incidentId], map: "idx_capas_incident_id")
+  @@index([investigationId], map: "idx_capas_investigation_id")
+  @@index([status], map: "idx_capas_status")
+  @@index([priority], map: "idx_capas_priority")
+  @@index([dueDate], map: "idx_capas_due_date")
+  @@index([assignedToId], map: "idx_capas_assigned_to_id")
+  @@index([verificationDueDate], map: "idx_capas_verification_due_date")
+  @@map("capas")
+}
+
+model RecurrenceLink {
+  id                String         @id @default(uuid()) @db.Uuid
+  incidentId        String         @map("incident_id") @db.Uuid
+  relatedIncidentId String         @map("related_incident_id") @db.Uuid
+  similarityType    SimilarityType @map("similarity_type")
+  detectedBy        DetectedBy     @map("detected_by")
+  notes             String?
+  isDismissed       Boolean        @default(false) @map("is_dismissed")
+  createdAt         DateTime       @default(now()) @map("created_at")
+
+  // Relations
+  incident        Incident @relation("RecurrenceLinkFrom", fields: [incidentId], references: [id])
+  relatedIncident Incident @relation("RecurrenceLinkTo", fields: [relatedIncidentId], references: [id])
+
+  @@unique([incidentId, relatedIncidentId, similarityType])
+  @@index([incidentId], map: "idx_recurrence_links_incident_id")
+  @@index([relatedIncidentId], map: "idx_recurrence_links_related_incident_id")
+  @@map("recurrence_links")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id") @db.Uuid
+  action     String
+  changes    Json?
+  userId     String   @map("user_id") @db.Uuid
+  incidentId String?  @map("incident_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user     User      @relation("AuditLogUser", fields: [userId], references: [id])
+  incident Incident? @relation("AuditLogIncident", fields: [incidentId], references: [id])
+
+  @@index([entityType, entityId], map: "idx_audit_logs_entity")
+  @@index([incidentId], map: "idx_audit_logs_incident_id")
+  @@index([createdAt], map: "idx_audit_logs_created_at")
+  @@map("audit_logs")
+}
+
+model HoursWorked {
+  id        String    @id @default(uuid()) @db.Uuid
+  division  Division?
+  year      Int
+  month     Int
+  hours     Decimal   @db.Decimal(12, 2)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@unique([division, year, month])
+  @@map("hours_worked")
+}
+
+model NotificationRule {
+  id             String         @id @default(uuid()) @db.Uuid
+  railroadClient RailroadClient @map("railroad_client")
+  incidentType   IncidentType   @map("incident_type")
+  windowMinutes  Int            @map("window_minutes")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  @@unique([railroadClient, incidentType])
+  @@map("notification_rules")
+}
+
+model Notification {
+  id         String           @id @default(uuid()) @db.Uuid
+  type       NotificationType
+  title      String
+  message    String
+  userId     String           @map("user_id") @db.Uuid
+  incidentId String?          @map("incident_id") @db.Uuid
+  isRead     Boolean          @default(false) @map("is_read")
+  readAt     DateTime?        @map("read_at")
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  // Relations
+  user     User      @relation("NotificationUser", fields: [userId], references: [id])
+  incident Incident? @relation("NotificationIncident", fields: [incidentId], references: [id])
+
+  @@index([userId, isRead], map: "idx_notifications_user_read")
+  @@index([createdAt], map: "idx_notifications_created_at")
+  @@map("notifications")
+}
+
+model SystemConfig {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  value       Json
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("system_config")
+}
+
+model IncidentNumberSequence {
+  year    Int @id
+  lastSeq Int @default(0) @map("last_seq")
+
+  @@map("incident_number_sequences")
+}
+
+model CapaNumberSequence {
+  year    Int @id
+  lastSeq Int @default(0) @map("last_seq")
+
+  @@map("capa_number_sequences")
+}
