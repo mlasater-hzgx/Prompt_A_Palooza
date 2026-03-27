@@ -187,6 +187,22 @@ export async function detectRecurrence(incidentId: string) {
   return createdLinks;
 }
 
+export async function listAllLinks() {
+  return prisma.recurrenceLink.findMany({
+    where: { isDismissed: false },
+    include: {
+      incident: {
+        select: { id: true, incidentNumber: true, title: true, incidentType: true, severity: true, incidentDate: true },
+      },
+      relatedIncident: {
+        select: { id: true, incidentNumber: true, title: true, incidentType: true, severity: true, incidentDate: true },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 100,
+  });
+}
+
 export async function getRecurrenceForIncident(incidentId: string) {
   const incident = await prisma.incident.findUnique({ where: { id: incidentId } });
   if (!incident) throw new NotFoundError('Incident', incidentId);

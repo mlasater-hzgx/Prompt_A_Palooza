@@ -11,6 +11,9 @@ const mutationRoles = requireRole('SAFETY_COORDINATOR', 'SAFETY_MANAGER', 'ADMIN
 // Run recurrence detection for an incident
 router.post('/incidents/:incidentId/detect', mutationRoles, ctrl.detectRecurrence);
 
+// List all recurrence links
+router.get('/links', ctrl.listAllLinks);
+
 // Get recurrence links for an incident
 router.get('/incidents/:incidentId/links', ctrl.getRecurrenceForIncident);
 

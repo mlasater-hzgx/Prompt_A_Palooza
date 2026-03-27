@@ -101,7 +101,7 @@ function useDismissLink() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (linkId: string) => {
-      const { data } = await apiClient.patch(`/recurrence/links/${linkId}/dismiss`);
+      const { data } = await apiClient.delete(`/recurrence/${linkId}`);
       return data;
     },
     onSuccess: () => {

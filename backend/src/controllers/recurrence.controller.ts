@@ -2,6 +2,13 @@ import { Request, Response, NextFunction } from 'express';
 import * as recurrenceService from '../services/recurrence.service';
 import { sendSuccess } from '../utils/response';
 
+export async function listAllLinks(_req: Request, res: Response, next: NextFunction) {
+  try {
+    const links = await recurrenceService.listAllLinks();
+    sendSuccess(res, links);
+  } catch (err) { next(err); }
+}
+
 export async function detectRecurrence(req: Request, res: Response, next: NextFunction) {
   try {
     const links = await recurrenceService.detectRecurrence(String(req.params.incidentId));
