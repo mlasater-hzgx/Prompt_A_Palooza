@@ -49,18 +49,6 @@ interface RecurrenceLink {
   createdAt: string;
 }
 
-interface RecurrenceCluster {
-  id: string;
-  name?: string;
-  incidentCount: number;
-  commonAttributes: string[];
-  incidents: Array<{
-    id: string;
-    incidentNumber?: string;
-    title?: string;
-  }>;
-}
-
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -314,9 +302,7 @@ function LinksTab() {
 // ---------------------------------------------------------------------------
 
 function ClustersTab() {
-  const navigate = useNavigate();
   const { data, isLoading, isError, error } = useRecurrenceClusters();
-  const clusters: RecurrenceCluster[] = data?.data ?? [];
 
   if (isLoading) {
     return (
@@ -335,7 +321,12 @@ function ClustersTab() {
     );
   }
 
-  if (clusters.length === 0) {
+  // API returns { clusters: [{ similarityType, count }], topPatterns: [...] }
+  const raw = data?.data ?? data ?? {};
+  const clusterItems: Array<{ similarityType: string; count: number }> = raw.clusters ?? raw.topPatterns ?? [];
+  const nonEmpty = clusterItems.filter((c) => c.count > 0);
+
+  if (nonEmpty.length === 0) {
     return (
       <Card>
         <CardContent sx={{ textAlign: 'center', py: 6 }}>
@@ -351,103 +342,66 @@ function ClustersTab() {
     );
   }
 
+  const totalLinks = nonEmpty.reduce((sum, c) => sum + c.count, 0);
+
   return (
     <Grid container spacing={3}>
-      {clusters.map((cluster) => (
-        <Grid size={{ xs: 12, sm: 6, md: 4 }} key={cluster.id}>
-          <Card
-            sx={{
-              height: '100%',
-              borderLeft: `4px solid ${colors.action.navyBlue}`,
-            }}
-          >
-            <CardContent>
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  mb: 2,
-                }}
-              >
-                <Typography variant="h6" sx={{ fontSize: '0.95rem' }}>
-                  {cluster.name ?? `Cluster ${cluster.id.slice(0, 6)}`}
-                </Typography>
-                <Chip
-                  label={`${cluster.incidentCount} incidents`}
-                  size="small"
+      {/* Summary card */}
+      <Grid size={{ xs: 12 }}>
+        <Card sx={{ borderLeft: `4px solid ${colors.brand.herzogGold}` }}>
+          <CardContent>
+            <Typography variant="h3" sx={{ mb: 1 }}>Pattern Summary</Typography>
+            <Typography variant="body1" color="text.secondary">
+              {totalLinks} recurrence links detected across {nonEmpty.length} pattern types
+            </Typography>
+          </CardContent>
+        </Card>
+      </Grid>
+
+      {/* One card per similarity type */}
+      {nonEmpty.map((cluster) => {
+        const info = SIMILARITY_TYPES[cluster.similarityType] ?? { label: cluster.similarityType, color: colors.brand.midGray };
+        return (
+          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={cluster.similarityType}>
+            <Card
+              sx={{
+                height: '100%',
+                borderLeft: `4px solid ${info.color}`,
+              }}
+            >
+              <CardContent>
+                <Box
                   sx={{
-                    backgroundColor: colors.brand.herzogGold,
-                    color: colors.brand.richBlack,
-                    fontWeight: 600,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 1,
                   }}
-                />
-              </Box>
-
-              {cluster.commonAttributes.length > 0 && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 0.5 }}
-                  >
-                    Common Attributes
+                >
+                  <Typography variant="h3" sx={{ fontSize: '1rem' }}>
+                    {info.label}
                   </Typography>
-                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                    {cluster.commonAttributes.map((attr) => (
-                      <Chip
-                        key={attr}
-                        label={attr}
-                        size="small"
-                        variant="outlined"
-                      />
-                    ))}
-                  </Box>
-                </Box>
-              )}
-
-              {cluster.incidents.length > 0 && (
-                <Box>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 0.5 }}
-                  >
-                    Incidents
-                  </Typography>
-                  <Box
+                  <Chip
+                    label={`${cluster.count} links`}
+                    size="small"
                     sx={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 0.5,
+                      backgroundColor: colors.brand.herzogGold,
+                      color: colors.brand.richBlack,
+                      fontWeight: 600,
                     }}
-                  >
-                    {cluster.incidents.map((incident) => (
-                      <Typography
-                        key={incident.id}
-                        variant="body2"
-                        sx={{
-                          cursor: 'pointer',
-                          '&:hover': {
-                            color: colors.action.navyBlue,
-                            textDecoration: 'underline',
-                          },
-                        }}
-                        onClick={() =>
-                          navigate(`/incidents/${incident.id}`)
-                        }
-                      >
-                        {incident.incidentNumber ?? incident.id.slice(0, 8)}
-                        {incident.title ? ` - ${incident.title}` : ''}
-                      </Typography>
-                    ))}
-                  </Box>
+                  />
                 </Box>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-      ))}
+                <Typography variant="body2" color="text.secondary">
+                  {cluster.count === 1
+                    ? '1 pair of linked incidents'
+                    : `${cluster.count} pairs of linked incidents`}
+                  {' '}share this pattern.
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        );
+      })}
     </Grid>
   );
 }
