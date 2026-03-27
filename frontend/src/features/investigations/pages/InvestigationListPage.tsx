@@ -236,15 +236,9 @@ export function Component() {
                   </TableRow>
                 ) : (
                   investigations.map(
-                    (investigation: {
-                      id: string;
-                      incidentNumber?: string;
-                      incidentTitle?: string;
-                      leadInvestigatorName?: string;
-                      status?: string;
-                      targetCompletionDate?: string;
-                      division?: string;
-                    }) => {
+                    (investigation: any) => {
+                      const inc = investigation.incident ?? {};
+                      const lead = investigation.leadInvestigator ?? {};
                       const overdue =
                         investigation.status !== 'COMPLETE' &&
                         isOverdue(investigation.targetCompletionDate);
@@ -258,7 +252,7 @@ export function Component() {
                         >
                           <TableCell>
                             <Typography variant="body2" fontWeight={600}>
-                              {investigation.incidentNumber ?? '--'}
+                              {inc.incidentNumber ?? '--'}
                             </Typography>
                           </TableCell>
                           <TableCell>
@@ -267,11 +261,11 @@ export function Component() {
                               noWrap
                               sx={{ maxWidth: 280 }}
                             >
-                              {investigation.incidentTitle ?? 'Untitled'}
+                              {inc.title ?? 'Untitled'}
                             </Typography>
                           </TableCell>
                           <TableCell>
-                            {investigation.leadInvestigatorName ?? '--'}
+                            {lead.name ?? '--'}
                           </TableCell>
                           <TableCell>
                             {investigation.status ? (
@@ -303,10 +297,10 @@ export function Component() {
                             </Typography>
                           </TableCell>
                           <TableCell>
-                            {investigation.division
+                            {inc.division
                               ? getLabelForValue(
                                   DIVISIONS,
-                                  investigation.division,
+                                  inc.division,
                                 )
                               : '--'}
                           </TableCell>
