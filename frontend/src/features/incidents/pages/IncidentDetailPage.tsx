@@ -39,10 +39,7 @@ import {
 import { PageContainer } from '../../../components/layout/PageContainer';
 import {
   useIncident,
-  useIncidentInjuredPersons,
   useIncidentTimeline,
-  useIncidentCapas,
-  useIncidentRecurrence,
   useTransitionIncidentStatus,
 } from '../api/incidents.api';
 import {
@@ -320,23 +317,8 @@ function SummaryTab({ incident }: { incident: Record<string, unknown> }) {
 
 // --- Injured Persons Tab ---
 
-function InjuredPersonsTab({ incidentId }: { incidentId: string }) {
-  const { data, isLoading, isError } = useIncidentInjuredPersons(incidentId);
-  const persons = data?.data ?? [];
-
-  if (isLoading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (isError) {
-    return (
-      <Alert severity="error">Failed to load injured persons data.</Alert>
-    );
-  }
+function InjuredPersonsTab({ persons: personsRaw }: { persons: any[] }) {
+  const persons = personsRaw ?? [];
 
   if (persons.length === 0) {
     return (
@@ -448,22 +430,9 @@ function InvestigationTab({ incident }: { incident: Record<string, unknown> }) {
 
 // --- CAPAs Tab ---
 
-function CapasTab({ incidentId }: { incidentId: string }) {
+function CapasTab({ capas: capasRaw, incidentId }: { capas: any[]; incidentId: string }) {
   const navigate = useNavigate();
-  const { data, isLoading, isError } = useIncidentCapas(incidentId);
-  const capas = data?.data ?? [];
-
-  if (isLoading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (isError) {
-    return <Alert severity="error">Failed to load CAPAs.</Alert>;
-  }
+  const capas = capasRaw ?? [];
 
   if (capas.length === 0) {
     return (
@@ -545,22 +514,9 @@ function CapasTab({ incidentId }: { incidentId: string }) {
 
 // --- Recurrence Tab ---
 
-function RecurrenceTab({ incidentId }: { incidentId: string }) {
+function RecurrenceTab({ links }: { links: any[] }) {
   const navigate = useNavigate();
-  const { data, isLoading, isError } = useIncidentRecurrence(incidentId);
-  const linked = data?.data ?? [];
-
-  if (isLoading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (isError) {
-    return <Alert severity="error">Failed to load recurrence data.</Alert>;
-  }
+  const linked = links ?? [];
 
   if (linked.length === 0) {
     return (
@@ -891,7 +847,7 @@ export function Component() {
       </TabPanel>
 
       <TabPanel value={tabValue} index={1}>
-        <InjuredPersonsTab incidentId={incidentId ?? ''} />
+        <InjuredPersonsTab persons={(incident.injuredPersons ?? []) as any[]} />
       </TabPanel>
 
       <TabPanel value={tabValue} index={2}>
@@ -899,11 +855,11 @@ export function Component() {
       </TabPanel>
 
       <TabPanel value={tabValue} index={3}>
-        <CapasTab incidentId={incidentId ?? ''} />
+        <CapasTab capas={(incident.capas ?? []) as any[]} incidentId={incidentId ?? ''} />
       </TabPanel>
 
       <TabPanel value={tabValue} index={4}>
-        <RecurrenceTab incidentId={incidentId ?? ''} />
+        <RecurrenceTab links={[...((incident.recurrenceLinksFrom ?? []) as any[]), ...((incident.recurrenceLinksTo ?? []) as any[])]} />
       </TabPanel>
 
       <TabPanel value={tabValue} index={5}>
