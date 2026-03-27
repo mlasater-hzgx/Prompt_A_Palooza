@@ -27,7 +27,7 @@ import {
   InputAdornment,
   FormControlLabel,
 } from '@mui/material';
-import { Search as SearchIcon } from '@mui/icons-material';
+import { Search as SearchIcon, PersonAdd as AddUserIcon } from '@mui/icons-material';
 import { PageContainer } from '../../../components/layout/PageContainer';
 import { apiClient } from '../../../lib/api-client';
 import { DIVISIONS } from '../../../config/constants';
@@ -53,28 +53,24 @@ interface EditFormState {
 /* ---------- Constants ---------- */
 
 const ROLES = [
-  { value: 'ADMIN', label: 'Admin' },
+  { value: 'FIELD_REPORTER', label: 'Field Reporter' },
+  { value: 'SAFETY_COORDINATOR', label: 'Safety Coordinator' },
   { value: 'SAFETY_MANAGER', label: 'Safety Manager' },
-  { value: 'INVESTIGATOR', label: 'Investigator' },
-  { value: 'SUPERVISOR', label: 'Supervisor' },
-  { value: 'EMPLOYEE', label: 'Employee' },
-  { value: 'VIEWER', label: 'Viewer' },
+  { value: 'PROJECT_MANAGER', label: 'Project Manager' },
+  { value: 'DIVISION_MANAGER', label: 'Division Manager' },
+  { value: 'EXECUTIVE', label: 'Executive' },
+  { value: 'ADMINISTRATOR', label: 'Administrator' },
 ] as const;
 
-function getRoleColor(role: string): 'error' | 'warning' | 'info' | 'success' | 'default' {
-  switch (role) {
-    case 'ADMIN':
-      return 'error';
-    case 'SAFETY_MANAGER':
-      return 'warning';
-    case 'INVESTIGATOR':
-      return 'info';
-    case 'SUPERVISOR':
-      return 'success';
-    default:
-      return 'default';
-  }
-}
+const ROLE_COLORS: Record<string, string> = {
+  ADMINISTRATOR: '#6B4C9A',
+  SAFETY_MANAGER: '#1E3A5F',
+  SAFETY_COORDINATOR: '#086670',
+  FIELD_REPORTER: '#1E6B38',
+  PROJECT_MANAGER: '#8A5700',
+  DIVISION_MANAGER: '#AB2D24',
+  EXECUTIVE: '#000000',
+};
 
 /* ---------- API hooks ---------- */
 
@@ -115,6 +111,19 @@ function useToggleUserActive() {
   });
 }
 
+function useCreateUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: { name: string; email: string; role: string; division?: string }) => {
+      const { data } = await apiClient.post('/users', body);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+    },
+  });
+}
+
 /* ---------- Main Component ---------- */
 
 export function Component() {
@@ -122,10 +131,13 @@ export function Component() {
   const [appliedSearch, setAppliedSearch] = useState('');
   const [editUser, setEditUser] = useState<User | null>(null);
   const [editForm, setEditForm] = useState<EditFormState>({ role: '', division: '', isActive: true });
+  const [addOpen, setAddOpen] = useState(false);
+  const [addForm, setAddForm] = useState({ name: '', email: '', role: 'FIELD_REPORTER', division: '' });
 
   const { data, isLoading, isError, error } = useUsers(appliedSearch);
   const updateUser = useUpdateUser();
   const toggleActive = useToggleUserActive();
+  const createUser = useCreateUser();
 
   const users: User[] = data?.data ?? data ?? [];
 
@@ -161,7 +173,14 @@ export function Component() {
   );
 
   return (
-    <PageContainer title="User Management">
+    <PageContainer
+      title="User Management"
+      actions={
+        <Button variant="contained" startIcon={<AddUserIcon />} onClick={() => { setAddForm({ name: '', email: '', role: 'FIELD_REPORTER', division: '' }); setAddOpen(true); }}>
+          Add User
+        </Button>
+      }
+    >
       {/* Search Bar */}
       <Card sx={{ p: 2, mb: 3 }}>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
@@ -234,7 +253,12 @@ export function Component() {
                         <Chip
                           label={ROLES.find((r) => r.value === user.role)?.label ?? user.role}
                           size="small"
-                          color={getRoleColor(user.role)}
+                          sx={{
+                            bgcolor: `${ROLE_COLORS[user.role] ?? '#58595B'}18`,
+                            color: ROLE_COLORS[user.role] ?? '#58595B',
+                            fontWeight: 600,
+                            fontSize: '0.7rem',
+                          }}
                         />
                       </TableCell>
                       <TableCell>
@@ -319,6 +343,72 @@ export function Component() {
             disabled={updateUser.isPending}
           >
             {updateUser.isPending ? 'Saving...' : 'Save'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Add User Dialog */}
+      <Dialog open={addOpen} onClose={() => setAddOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontFamily: 'Oswald, sans-serif', color: colors.action.navyBlue }}>
+          Add User
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 1 }}>
+            <TextField
+              label="Full Name"
+              value={addForm.name}
+              onChange={(e) => setAddForm((prev) => ({ ...prev, name: e.target.value }))}
+              fullWidth
+              required
+            />
+            <TextField
+              label="Email"
+              type="email"
+              value={addForm.email}
+              onChange={(e) => setAddForm((prev) => ({ ...prev, email: e.target.value }))}
+              fullWidth
+              required
+            />
+            <FormControl fullWidth>
+              <InputLabel>Role</InputLabel>
+              <Select
+                label="Role"
+                value={addForm.role}
+                onChange={(e) => setAddForm((prev) => ({ ...prev, role: e.target.value }))}
+              >
+                {ROLES.map((r) => (
+                  <MenuItem key={r.value} value={r.value}>{r.label}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth>
+              <InputLabel>Division</InputLabel>
+              <Select
+                label="Division"
+                value={addForm.division}
+                onChange={(e) => setAddForm((prev) => ({ ...prev, division: e.target.value }))}
+              >
+                <MenuItem value="">None</MenuItem>
+                {DIVISIONS.map((d) => (
+                  <MenuItem key={d.value} value={d.value}>{d.label}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            disabled={!addForm.name || !addForm.email || createUser.isPending}
+            onClick={() => {
+              createUser.mutate(
+                { name: addForm.name, email: addForm.email, role: addForm.role, division: addForm.division || undefined },
+                { onSuccess: () => setAddOpen(false) },
+              );
+            }}
+          >
+            {createUser.isPending ? 'Creating...' : 'Create User'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -34,6 +34,13 @@ export async function deactivateUser(req: Request, res: Response, next: NextFunc
   } catch (err) { next(err); }
 }
 
+export async function createUser(req: Request, res: Response, next: NextFunction) {
+  try {
+    const user = await usersService.createUser(req.body);
+    sendSuccess(res, user, 201);
+  } catch (err) { next(err); }
+}
+
 export async function getMe(req: Request, res: Response, next: NextFunction) {
   try {
     const user = await usersService.getCurrentUser(req.user!.id);

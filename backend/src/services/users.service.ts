@@ -48,6 +48,18 @@ export async function deactivateUser(id: string) {
   return prisma.user.update({ where: { id }, data: { isActive: false } });
 }
 
+export async function createUser(data: { name: string; email: string; role: Role; division?: Division }) {
+  return prisma.user.create({
+    data: {
+      name: data.name,
+      email: data.email,
+      role: data.role,
+      division: data.division ?? null,
+      azureAdId: `manual-${Date.now()}`, // Placeholder until Azure AD login
+    },
+  });
+}
+
 export async function getCurrentUser(id: string) {
   return getUserById(id);
 }
