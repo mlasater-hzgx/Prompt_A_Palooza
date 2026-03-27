@@ -11,6 +11,8 @@ import { injuredPersonRoutes } from './injured-persons.routes';
 import { witnessStatementRoutes } from './witness-statements.routes';
 import { recurrenceRoutes } from './recurrence.routes';
 import { oshaRoutes } from './osha.routes';
+import { dashboardRoutes } from './dashboard.routes';
+import { analyticsRoutes } from './analytics.routes';
 
 const router = Router();
 
@@ -45,6 +47,10 @@ router.use('/recurrence', recurrenceRoutes);
 
 // OSHA
 router.use('/osha', oshaRoutes);
+
+// Dashboard & Analytics
+router.use('/dashboard', dashboardRoutes);
+router.use('/analytics', analyticsRoutes);
 
 // API root
 router.get('/', (_req, res) => {
