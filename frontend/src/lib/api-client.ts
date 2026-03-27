@@ -8,20 +8,31 @@ export const apiClient = axios.create({
   },
 });
 
-// Auth interceptor - will add Bearer token from MSAL
+// Dev user switching support
+let devUserId: string | null = null;
+
+export function setDevUserId(id: string | null) {
+  devUserId = id;
+}
+
+export function getDevUserId(): string | null {
+  return devUserId;
+}
+
+// Auth interceptor
 apiClient.interceptors.request.use((config) => {
-  // TODO: Get token from MSAL instance
-  // const token = msalInstance.getActiveAccount()...
-  // if (token) config.headers.Authorization = `Bearer ${token}`;
+  // In dev mode, send the switched user ID header
+  if (devUserId) {
+    config.headers['X-Dev-User-Id'] = devUserId;
+  }
   return config;
 });
 
-// Response interceptor - unwrap envelope
+// Response interceptor
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // TODO: Redirect to login
       window.location.href = '/login';
     }
     return Promise.reject(error);

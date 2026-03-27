@@ -1,11 +1,31 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/query-client';
 import { HerzogThemeProvider } from '../design-system/ThemeProvider';
 import { ErrorBoundary } from './error-boundary';
+import { apiClient } from '../lib/api-client';
+import { useAuthStore } from '../store/auth.store';
 
 interface ProvidersProps {
   children: ReactNode;
+}
+
+function AuthLoader({ children }: { children: ReactNode }) {
+  const { setUser } = useAuthStore();
+
+  useEffect(() => {
+    async function loadUser() {
+      try {
+        const { data } = await apiClient.get('/users/me');
+        setUser(data.data);
+      } catch {
+        setUser(null);
+      }
+    }
+    loadUser();
+  }, [setUser]);
+
+  return <>{children}</>;
 }
 
 export function Providers({ children }: ProvidersProps) {
@@ -13,7 +33,9 @@ export function Providers({ children }: ProvidersProps) {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <HerzogThemeProvider>
-          {children}
+          <AuthLoader>
+            {children}
+          </AuthLoader>
         </HerzogThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>

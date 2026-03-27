@@ -26,19 +26,31 @@ export function requireAnyRole() {
   };
 }
 
-// For development: bypass auth and set a mock user (loads admin from DB)
-let cachedDevUser: Express.Request['user'] | null = null;
+// For development: bypass auth and allow user switching via X-Dev-User-Id header
+let defaultDevUser: Express.Request['user'] | null = null;
 
 export async function devAuthMiddleware(req: Request, _res: Response, next: NextFunction) {
   if (!req.user) {
-    if (!cachedDevUser) {
-      const admin = await prisma.user.findFirst({ where: { role: 'ADMINISTRATOR' } });
-      if (admin) {
-        cachedDevUser = { id: admin.id, email: admin.email, name: admin.name, role: admin.role, division: admin.division };
+    // Check for dev user switching header
+    const devUserId = req.headers['x-dev-user-id'] as string | undefined;
+
+    if (devUserId) {
+      const switchedUser = await prisma.user.findUnique({ where: { id: devUserId } });
+      if (switchedUser) {
+        req.user = { id: switchedUser.id, email: switchedUser.email, name: switchedUser.name, role: switchedUser.role, division: switchedUser.division };
+        return next();
       }
     }
-    if (cachedDevUser) {
-      req.user = cachedDevUser;
+
+    // Default to admin user
+    if (!defaultDevUser) {
+      const admin = await prisma.user.findFirst({ where: { role: 'ADMINISTRATOR' } });
+      if (admin) {
+        defaultDevUser = { id: admin.id, email: admin.email, name: admin.name, role: admin.role, division: admin.division };
+      }
+    }
+    if (defaultDevUser) {
+      req.user = defaultDevUser;
     } else {
       req.user = {
         id: '00000000-0000-0000-0000-000000000001',

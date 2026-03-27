@@ -1,8 +1,10 @@
 import { Box, IconButton, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { Menu as MenuIcon, Notifications as NotifIcon } from '@mui/icons-material';
 import { SyncStatusIndicator } from '../feedback/SyncStatusIndicator';
+import { DevUserSwitcher } from '../auth/DevUserSwitcher';
 import { useUiStore } from '../../store/ui.store';
 import { useAuthStore } from '../../store/auth.store';
+import { ROLE_LABELS, type RoleName } from '../../config/roles';
 
 export function TopBar() {
   const theme = useTheme();
@@ -29,6 +31,8 @@ export function TopBar() {
           <MenuIcon />
         </IconButton>
       )}
+
+      <DevUserSwitcher />
 
       <Box sx={{ flexGrow: 1 }} />
 
@@ -58,9 +62,14 @@ export function TopBar() {
             {user.name.charAt(0).toUpperCase()}
           </Box>
           {!isMobile && (
-            <Typography variant="body1" sx={{ fontWeight: 500 }}>
-              {user.name}
-            </Typography>
+            <Box>
+              <Typography variant="body1" sx={{ fontWeight: 500, lineHeight: 1.2 }}>
+                {user.name}
+              </Typography>
+              <Typography sx={{ fontSize: '0.68rem', color: '#A7A9AC', lineHeight: 1.2 }}>
+                {ROLE_LABELS[user.role as RoleName] ?? user.role}
+              </Typography>
+            </Box>
           )}
         </Box>
       )}
