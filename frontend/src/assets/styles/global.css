@@ -1,0 +1,98 @@
+/* Herzog UI Brand System - CSS Custom Properties */
+:root {
+  /* Brand Colors */
+  --herzog-gold: #FFD100;
+  --bright-yellow: #FFDD00;
+  --dark-yellow: #F1B80E;
+  --rich-black: #000000;
+  --dark-gray: #58595B;
+  --mid-gray: #6D6E71;
+  --smoke: #A7A9AC;
+  --accent-gray: #D1D3D4;
+
+  /* Action Colors */
+  --navy-blue: #1E3A5F;
+  --navy-light: #2E5A8F;
+  --navy-dark: #0F1F33;
+
+  /* Semantic Colors */
+  --success-green: #1E6B38;
+  --success-light: #D4EDDA;
+  --error-red: #AB2D24;
+  --error-light: #F8D7DA;
+  --warning-amber: #8A5700;
+  --warning-light: #FFF3CD;
+  --info-teal: #086670;
+  --info-light: #D1ECF1;
+
+  /* Extended Neutrals */
+  --white: #FFFFFF;
+  --off-white: #FAFAFA;
+  --light-gray: #F5F5F5;
+  --border-gray: #E5E5E5;
+  --input-border: #8E8E8E;
+
+  /* Data Visualization */
+  --chart-purple: #6B4C9A;
+  --chart-slate: #4A6274;
+
+  /* Sidebar */
+  --sidebar-width: 220px;
+  --sidebar-collapsed-width: 64px;
+}
+
+/* Focus indicators - WCAG 2.4.7 */
+*:focus-visible {
+  outline: 2px solid var(--navy-blue);
+  outline-offset: 2px;
+}
+
+[data-theme="dark"] *:focus-visible {
+  outline-color: var(--herzog-gold);
+}
+
+/* Skip to content link */
+.skip-to-content {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--navy-blue);
+  color: var(--white);
+  padding: 8px 16px;
+  z-index: 9999;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 0.2s;
+}
+
+.skip-to-content:focus {
+  top: 0;
+}
+
+/* Reduced motion - WCAG 2.3.3 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Print styles */
+@media print {
+  nav, aside, .no-print {
+    display: none !important;
+  }
+  body {
+    font-size: 12pt;
+    color: #000;
+    background: #fff;
+  }
+  a[href]::after {
+    content: none;
+  }
+}
