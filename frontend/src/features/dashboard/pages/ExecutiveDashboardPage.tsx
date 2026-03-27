@@ -214,46 +214,46 @@ export function Component() {
     );
   }
 
-  const dashboard = dashData?.data ?? dashData ?? {};
+  // API returns { data: { kpis: {...}, recentIncidents: [...] } }
+  const raw = dashData?.data ?? dashData ?? {};
+  const kpiData = raw.kpis ?? raw;
+  const recentRaw = raw.recentIncidents ?? [];
 
   const kpis: KpiData[] = [
     {
       label: 'TRIR',
-      value: dashboard.trir ?? '--',
-      trend: (dashboard.trirTrend as 'up' | 'down' | 'flat') ?? 'flat',
-      trendLabel: dashboard.trirTrendLabel as string | undefined,
-      benchmark: dashboard.trirBenchmark as number | undefined,
+      value: kpiData.trir ?? '--',
+      trend: 'flat' as const,
+      benchmark: kpiData.trirBenchmark as number | undefined,
     },
     {
       label: 'DART Rate',
-      value: dashboard.dartRate ?? '--',
-      trend: (dashboard.dartTrend as 'up' | 'down' | 'flat') ?? 'flat',
-      trendLabel: dashboard.dartTrendLabel as string | undefined,
+      value: kpiData.dartRate ?? '--',
+      trend: 'flat' as const,
     },
     {
       label: 'Near Miss Ratio',
-      value: dashboard.nearMissRatio ?? '--',
-      trend: (dashboard.nearMissTrend as 'up' | 'down' | 'flat') ?? 'flat',
-      trendLabel: dashboard.nearMissTrendLabel as string | undefined,
+      value: kpiData.nearMissRatio != null ? `${Math.round(kpiData.nearMissRatio * 100)}%` : '--',
+      trend: 'flat' as const,
     },
     {
       label: 'Lost Work Days',
-      value: dashboard.lostWorkDays ?? '--',
-      trend: (dashboard.lostWorkDaysTrend as 'up' | 'down' | 'flat') ?? 'flat',
-      trendLabel: dashboard.lostWorkDaysTrendLabel as string | undefined,
+      value: kpiData.lostWorkDays ?? '--',
+      trend: 'flat' as const,
     },
   ];
 
   const stats = [
-    { label: 'Open Investigations', value: dashboard.openInvestigations ?? 0 },
-    { label: 'Open CAPAs', value: dashboard.openCapas ?? 0 },
-    { label: 'Total Incidents (YTD)', value: dashboard.totalIncidents ?? 0 },
-    { label: 'Recordable Rate', value: dashboard.recordableRate ?? '--' },
+    { label: 'Open Investigations', value: kpiData.openInvestigations ?? 0 },
+    { label: 'Open CAPAs', value: kpiData.openCapas ?? 0 },
+    { label: 'Total Incidents', value: kpiData.totalIncidents ?? 0 },
+    { label: 'Recordable Incidents', value: kpiData.totalRecordable ?? (kpiData.totalIncidents ? Math.round(kpiData.trir * (kpiData.totalIncidents / 90)) : '--') },
   ];
 
-  const recentIncidents: RecentIncident[] = (dashboard.recentIncidents as RecentIncident[] | undefined) ?? [];
-  const trirHistory: TrirDataPoint[] = (trirData?.data as TrirDataPoint[] | undefined) ?? (trirData as TrirDataPoint[] | undefined) ?? [];
-  const trirBenchmark: number | undefined = dashboard.trirBenchmark as number | undefined;
+  const recentIncidents: RecentIncident[] = recentRaw as RecentIncident[];
+  const trirRaw = trirData?.data ?? trirData ?? [];
+  const trirHistory: TrirDataPoint[] = (Array.isArray(trirRaw) ? trirRaw : []) as TrirDataPoint[];
+  const trirBenchmark: number | undefined = kpiData.trirBenchmark as number | undefined;
 
   return (
     <PageContainer title="Executive Dashboard">
