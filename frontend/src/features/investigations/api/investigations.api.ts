@@ -123,7 +123,7 @@ export function useAddFiveWhy() {
   return useMutation({
     mutationFn: async ({ investigationId, ...body }: FiveWhyInput) => {
       const { data } = await apiClient.post(
-        `/investigations/${investigationId}/five-whys`,
+        `/root-cause/investigations/${investigationId}/five-why`,
         body,
       );
       return data;
@@ -137,9 +137,9 @@ export function useAddFiveWhy() {
 export function useDeleteFiveWhy() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ investigationId, entryId }: { investigationId: string; entryId: string }) => {
+    mutationFn: async (params: { investigationId: string; entryId: string }) => {
       const { data } = await apiClient.delete(
-        `/investigations/${investigationId}/five-whys/${entryId}`,
+        `/root-cause/five-why/${params.entryId}`,
       );
       return data;
     },
@@ -158,7 +158,7 @@ export function useAddFishboneFactor() {
   return useMutation({
     mutationFn: async ({ investigationId, ...body }: FishboneFactorInput) => {
       const { data } = await apiClient.post(
-        `/investigations/${investigationId}/fishbone-factors`,
+        `/root-cause/investigations/${investigationId}/fishbone`,
         body,
       );
       return data;
@@ -172,15 +172,9 @@ export function useAddFishboneFactor() {
 export function useDeleteFishboneFactor() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({
-      investigationId,
-      factorId,
-    }: {
-      investigationId: string;
-      factorId: string;
-    }) => {
+    mutationFn: async (params: { investigationId: string; factorId: string }) => {
       const { data } = await apiClient.delete(
-        `/investigations/${investigationId}/fishbone-factors/${factorId}`,
+        `/root-cause/fishbone/${params.factorId}`,
       );
       return data;
     },
