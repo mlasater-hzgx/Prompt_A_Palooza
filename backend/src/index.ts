@@ -5,6 +5,7 @@ import { createApp } from './app';
 import { config } from './config';
 import { logger } from './utils/logger';
 import { prisma } from './config/database';
+import { startJobs } from './jobs';
 
 async function main() {
   const app = createApp();
@@ -15,6 +16,11 @@ async function main() {
 
   app.listen(config.port, () => {
     logger.info(`Server running on port ${config.port} in ${config.nodeEnv} mode`);
+
+    // Start scheduled jobs (skip in test environment)
+    if (config.nodeEnv !== 'test') {
+      startJobs();
+    }
   });
 }
 
