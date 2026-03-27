@@ -1,5 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
+// Also try backend-local .env
+dotenv.config({ path: './backend/.env' });
 
 import { createApp } from './app';
 import { config } from './config';
