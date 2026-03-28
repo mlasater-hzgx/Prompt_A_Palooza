@@ -1,5 +1,7 @@
 import { useState, useCallback, type SyntheticEvent } from 'react';
 import { useParams, useNavigate } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '../../../lib/api-client';
 import {
   Box,
   Button,
@@ -379,9 +381,24 @@ function InjuredPersonsTab({ persons: personsRaw }: { persons: any[] }) {
 
 function InvestigationTab({ incident }: { incident: Record<string, unknown> }) {
   const navigate = useNavigate();
-  const investigationId = incident.investigationId as string | undefined;
+  const queryClient = useQueryClient();
+  const investigation = incident.investigation as { id: string; status: string; leadInvestigator?: { name: string } } | null;
+  const [isCreating, setIsCreating] = useState(false);
 
-  if (investigationId) {
+  const handleStartInvestigation = async () => {
+    setIsCreating(true);
+    try {
+      const { data } = await apiClient.post(`/investigations/incidents/${incident.id}`, {});
+      const newInv = data?.data ?? data;
+      queryClient.invalidateQueries({ queryKey: ['incident', incident.id] });
+      navigate(`/investigations/${newInv.id}`);
+    } catch (err) {
+      console.error('Failed to create investigation:', err);
+      setIsCreating(false);
+    }
+  };
+
+  if (investigation) {
     return (
       <Card>
         <CardContent>
@@ -391,14 +408,19 @@ function InvestigationTab({ incident }: { incident: Record<string, unknown> }) {
                 Linked Investigation
               </Typography>
               <Typography variant="body1">
-                Investigation ID: {investigationId}
+                Status: {(investigation.status ?? '').replace(/_/g, ' ')}
               </Typography>
+              {investigation.leadInvestigator && (
+                <Typography variant="body2" color="text.secondary">
+                  Lead: {investigation.leadInvestigator.name}
+                </Typography>
+              )}
             </Box>
             <Button
               variant="contained"
               color="primary"
               startIcon={<InvestigateIcon />}
-              onClick={() => navigate(`/investigations/${investigationId}`)}
+              onClick={() => navigate(`/investigations/${investigation.id}`)}
             >
               View Investigation
             </Button>
@@ -419,9 +441,10 @@ function InvestigationTab({ incident }: { incident: Record<string, unknown> }) {
           variant="contained"
           color="primary"
           startIcon={<InvestigateIcon />}
-          onClick={() => navigate(`/investigations?incidentId=${incident.id}`)}
+          disabled={isCreating}
+          onClick={handleStartInvestigation}
         >
-          Start Investigation
+          {isCreating ? 'Starting...' : 'Start Investigation'}
         </Button>
       </CardContent>
     </Card>
