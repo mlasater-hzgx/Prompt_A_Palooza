@@ -28,8 +28,8 @@ import { colors } from '../../../design-system/tokens/colors';
 interface ConfigEntry {
   id: string;
   key: string;
-  value: string;
-  description: string;
+  value: unknown;
+  description: string | null;
 }
 
 interface EditFormState {
@@ -67,7 +67,7 @@ function useSystemConfig() {
 function useUpdateConfig() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...body }: { id: string } & Omit<EditFormState, 'key'>) => {
+    mutationFn: async (body: { key: string; value: unknown; description?: string }) => {
       const { data } = await apiClient.put('/config/system', body);
       return data;
     },
@@ -79,19 +79,16 @@ function useUpdateConfig() {
 
 /* ---------- Helpers ---------- */
 
-function formatValue(value: string): string {
-  try {
-    const parsed: unknown = JSON.parse(value);
-    return JSON.stringify(parsed, null, 2);
-  } catch {
-    return value;
-  }
+function formatValue(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return value;
+  return JSON.stringify(value, null, 2);
 }
 
-function truncateValue(value: string, maxLen = 80): string {
-  const clean = value.replace(/\s+/g, ' ').trim();
-  if (clean.length <= maxLen) return clean;
-  return clean.slice(0, maxLen) + '...';
+function displayValue(value: unknown, maxLen = 80): string {
+  const str = typeof value === 'string' ? value : JSON.stringify(value);
+  if (str.length <= maxLen) return str;
+  return str.slice(0, maxLen) + '...';
 }
 
 /* ---------- Main Component ---------- */
@@ -110,7 +107,7 @@ export function Component() {
     setEditForm({
       key: entry.key,
       value: formatValue(entry.value),
-      description: entry.description,
+      description: entry.description ?? '',
     });
   }, []);
 
@@ -121,8 +118,11 @@ export function Component() {
 
   const handleSave = useCallback(() => {
     if (!editEntry) return;
+    // Try to parse value as JSON, fall back to string
+    let parsedValue: unknown = editForm.value;
+    try { parsedValue = JSON.parse(editForm.value); } catch { /* keep as string */ }
     updateConfig.mutate(
-      { id: editEntry.id, value: editForm.value, description: editForm.description },
+      { key: editEntry.key, value: parsedValue, description: editForm.description },
       { onSuccess: () => closeDialog() },
     );
   }, [editEntry, editForm, updateConfig, closeDialog]);
@@ -199,12 +199,12 @@ export function Component() {
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2" fontFamily="monospace" sx={{ maxWidth: 260 }} noWrap>
-                          {truncateValue(entry.value)}
+                          {displayValue(entry.value)}
                         </Typography>
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2" sx={{ maxWidth: 280 }} noWrap>
-                          {entry.description || CONFIG_KEY_INFO[entry.key] || '--'}
+                          {entry.description ?? CONFIG_KEY_INFO[entry.key] ?? '--'}
                         </Typography>
                       </TableCell>
                       <TableCell align="right">
