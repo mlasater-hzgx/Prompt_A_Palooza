@@ -96,7 +96,7 @@ export function Component() {
   const { data, isLoading, isError, error } = useIncidents(filters);
 
   const incidents = data?.data ?? [];
-  const meta = data?.meta ?? { total: 0, page: 1, pageSize: 25 };
+  const totalCount = data?.meta?.pagination?.totalCount ?? 0;
 
   const handleFilterChange = useCallback(
     (field: keyof IncidentFilters, value: string) => {
@@ -381,9 +381,9 @@ export function Component() {
 
           <TablePagination
             component="div"
-            count={meta.total}
-            page={(meta.page ?? 1) - 1}
-            rowsPerPage={meta.pageSize ?? 25}
+            count={totalCount}
+            page={(filters.page ?? 1) - 1}
+            rowsPerPage={filters.pageSize ?? 25}
             rowsPerPageOptions={[10, 25, 50, 100]}
             onPageChange={handlePageChange}
             onRowsPerPageChange={handleRowsPerPageChange}
