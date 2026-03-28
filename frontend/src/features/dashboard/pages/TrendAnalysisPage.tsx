@@ -59,13 +59,13 @@ interface LeadingIndicatorBar {
 const oswald: React.CSSProperties = { fontFamily: 'Oswald, sans-serif' };
 
 const AREA_KEYS = [
-  { key: 'injury', color: colors.dataViz[4] ?? colors.semantic.error },
-  { key: 'nearMiss', color: colors.dataViz[3] ?? colors.semantic.success },
-  { key: 'propertyDamage', color: colors.dataViz[0] ?? colors.action.navyBlue },
-  { key: 'environmental', color: colors.dataViz[1] ?? colors.semantic.info },
-  { key: 'vehicle', color: colors.dataViz[5] ?? '#6B4C9A' },
-  { key: 'fire', color: colors.dataViz[6] ?? colors.semantic.warning },
-  { key: 'utilityStrike', color: colors.dataViz[7] ?? '#4A6274' },
+  { key: 'INJURY', label: 'Injury', color: colors.dataViz[4] ?? colors.semantic.error },
+  { key: 'NEAR_MISS', label: 'Near Miss', color: colors.dataViz[3] ?? colors.semantic.success },
+  { key: 'PROPERTY_DAMAGE', label: 'Property Damage', color: colors.dataViz[0] ?? colors.action.navyBlue },
+  { key: 'ENVIRONMENTAL', label: 'Environmental', color: colors.dataViz[1] ?? colors.semantic.info },
+  { key: 'VEHICLE', label: 'Vehicle', color: colors.dataViz[5] ?? '#6B4C9A' },
+  { key: 'FIRE', label: 'Fire', color: colors.dataViz[6] ?? colors.semantic.warning },
+  { key: 'UTILITY_STRIKE', label: 'Utility Strike', color: colors.dataViz[7] ?? '#4A6274' },
 ];
 
 const PIE_COLORS = [
@@ -118,12 +118,19 @@ export function Component() {
 
   const trends: TrendPoint[] =
     (trendsData?.data as TrendPoint[] | undefined) ?? (trendsData as TrendPoint[] | undefined) ?? [];
-  const severity: SeveritySlice[] =
-    (severityData?.data as SeveritySlice[] | undefined) ?? (severityData as SeveritySlice[] | undefined) ?? [];
+  const severityRaw = ((severityData?.data ?? severityData ?? []) as any[]);
+  const severity: SeveritySlice[] = severityRaw.map((s: any) => ({
+    name: (s.severity ?? s.name ?? 'Unknown').replace(/_/g, ' '),
+    value: s.count ?? s.value ?? 0,
+  }));
   const factors: FactorBar[] =
     (factorsData?.data as FactorBar[] | undefined) ?? (factorsData as FactorBar[] | undefined) ?? [];
-  const leading: LeadingIndicatorBar[] =
-    (leadingData?.data as LeadingIndicatorBar[] | undefined) ?? (leadingData as LeadingIndicatorBar[] | undefined) ?? [];
+  const leadingRaw = (leadingData?.data ?? leadingData ?? {}) as Record<string, number | null>;
+  const leading: LeadingIndicatorBar[] = [
+    { name: 'Near Miss Rate', actual: leadingRaw.nearMissRate ?? 0, target: leadingRaw.nearMissRateTarget ?? 0 },
+    { name: 'CAPA Closure', actual: leadingRaw.capaClosureRate ?? 0, target: leadingRaw.capaClosureRateTarget ?? 0 },
+    { name: 'Investigation Timeliness', actual: leadingRaw.investigationTimeliness ?? 0, target: leadingRaw.investigationTimelinessTarget ?? 0 },
+  ].filter((l) => l.actual > 0 || l.target > 0);
 
   const isLoading = trendsLoading || sevLoading || factorsLoading || leadingLoading;
 
@@ -167,6 +174,7 @@ export function Component() {
                       key={ak.key}
                       type="monotone"
                       dataKey={ak.key}
+                      name={ak.label}
                       stackId="1"
                       stroke={ak.color}
                       fill={ak.color}
