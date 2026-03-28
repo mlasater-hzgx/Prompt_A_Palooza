@@ -29,9 +29,17 @@ import {
   ArrowBack as BackIcon,
   RateReview as ReviewIcon,
   Science as RcaIcon,
+  Edit as EditIcon,
+  Send as SubmitIcon,
 } from '@mui/icons-material';
+import {
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+} from '@mui/material';
 import { PageContainer } from '../../../components/layout/PageContainer';
-import { useInvestigation, useSubmitReview } from '../api/investigations.api';
+import { useInvestigation, useUpdateInvestigation, useSubmitReview } from '../api/investigations.api';
 import { DIVISIONS } from '../../../config/constants';
 import { colors } from '../../../design-system/tokens/colors';
 
@@ -452,6 +460,100 @@ function ReviewDialog({ open, onClose, onSubmit, isPending }: ReviewDialogProps)
 }
 
 // ---------------------------------------------------------------------------
+// Edit Dialog
+// ---------------------------------------------------------------------------
+
+interface EditDialogProps {
+  open: boolean;
+  onClose: () => void;
+  investigation: Record<string, unknown>;
+  investigationId: string;
+}
+
+function EditDialog({ open, onClose, investigation, investigationId }: EditDialogProps) {
+  const updateInvestigation = useUpdateInvestigation();
+  const [form, setForm] = useState({
+    investigationSummary: '',
+    rootCauseMethod: '',
+    rootCauseSummary: '',
+    recommendations: '',
+  });
+
+  // Sync form when dialog opens
+  const handleOpen = useCallback(() => {
+    setForm({
+      investigationSummary: (investigation.investigationSummary as string) ?? '',
+      rootCauseMethod: (investigation.rootCauseMethod as string) ?? '',
+      rootCauseSummary: (investigation.rootCauseSummary as string) ?? '',
+      recommendations: (investigation.recommendations as string) ?? '',
+    });
+  }, [investigation]);
+
+  // Reset form when opening
+  useState(() => { handleOpen(); });
+
+  const handleSave = async () => {
+    await updateInvestigation.mutateAsync({ id: investigationId, ...form });
+    onClose();
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth onTransitionEnter={handleOpen}>
+      <DialogTitle sx={{ fontFamily: 'Oswald, sans-serif', color: colors.action.navyBlue }}>
+        Edit Investigation
+      </DialogTitle>
+      <DialogContent>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 1 }}>
+          <TextField
+            label="Investigation Summary"
+            multiline
+            rows={4}
+            fullWidth
+            value={form.investigationSummary}
+            onChange={(e) => setForm((prev) => ({ ...prev, investigationSummary: e.target.value }))}
+          />
+          <FormControl fullWidth>
+            <InputLabel>Root Cause Method</InputLabel>
+            <Select
+              label="Root Cause Method"
+              value={form.rootCauseMethod}
+              onChange={(e) => setForm((prev) => ({ ...prev, rootCauseMethod: e.target.value }))}
+            >
+              <MenuItem value="">None</MenuItem>
+              <MenuItem value="FIVE_WHY">5-Why Analysis</MenuItem>
+              <MenuItem value="FISHBONE">Fishbone / Ishikawa</MenuItem>
+              <MenuItem value="BOTH">Both</MenuItem>
+            </Select>
+          </FormControl>
+          <TextField
+            label="Root Cause Summary"
+            multiline
+            rows={3}
+            fullWidth
+            value={form.rootCauseSummary}
+            onChange={(e) => setForm((prev) => ({ ...prev, rootCauseSummary: e.target.value }))}
+          />
+          <TextField
+            label="Recommendations"
+            multiline
+            rows={3}
+            fullWidth
+            value={form.recommendations}
+            onChange={(e) => setForm((prev) => ({ ...prev, recommendations: e.target.value }))}
+          />
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} disabled={updateInvestigation.isPending}>Cancel</Button>
+        <Button variant="contained" onClick={handleSave} disabled={updateInvestigation.isPending}>
+          {updateInvestigation.isPending ? 'Saving...' : 'Save'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
 
@@ -460,11 +562,13 @@ export function Component() {
   const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const { data, isLoading, isError, error } = useInvestigation(
     investigationId ?? '',
   );
   const submitReview = useSubmitReview();
+  const updateInvestigation = useUpdateInvestigation();
 
   const investigation: Record<string, unknown> = data?.data ?? data ?? {};
 
@@ -539,6 +643,36 @@ export function Component() {
             Back
           </Button>
 
+          {(investigation.status === 'IN_PROGRESS' || investigation.status === 'NOT_STARTED') && (
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<EditIcon />}
+              onClick={() => setEditDialogOpen(true)}
+            >
+              Edit
+            </Button>
+          )}
+
+          {investigation.status === 'IN_PROGRESS' && (
+            <Button
+              variant="contained"
+              color="secondary"
+              startIcon={<SubmitIcon />}
+              disabled={updateInvestigation.isPending}
+              onClick={async () => {
+                if (investigationId) {
+                  await updateInvestigation.mutateAsync({
+                    id: investigationId,
+                    status: 'PENDING_REVIEW',
+                  });
+                }
+              }}
+            >
+              Submit for Review
+            </Button>
+          )}
+
           {isPendingReview && (
             <Button
               variant="contained"
@@ -584,6 +718,14 @@ export function Component() {
       <TabPanel value={tabValue} index={2}>
         <CapasTab investigation={investigation} />
       </TabPanel>
+
+      {/* Edit Dialog */}
+      <EditDialog
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        investigation={investigation}
+        investigationId={investigationId ?? ''}
+      />
 
       {/* Review Dialog */}
       <ReviewDialog
