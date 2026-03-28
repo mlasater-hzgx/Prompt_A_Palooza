@@ -127,18 +127,24 @@ export function Component() {
                 summary,
               });
             } else {
-              // OSHA 301 - single incident report
-              const record = Array.isArray(payload) ? {} : payload;
+              // OSHA 301 - all recordable incidents for the year
+              const rows = Array.isArray(payload) ? payload : [];
               setReportData({
-                title: `OSHA 301 - ${record.incidentNumber ?? 'Incident Report'}`,
+                title: `OSHA 301 Incident Reports - ${selectedYear}`,
                 columns: [
-                  { key: 'field', label: 'Field' },
-                  { key: 'value', label: 'Value' },
+                  { key: 'incidentNumber', label: 'Incident #' },
+                  { key: 'employeeName', label: 'Employee' },
+                  { key: 'jobTitle', label: 'Job Title' },
+                  { key: 'incidentDate', label: 'Date' },
+                  { key: 'incidentTime', label: 'Time' },
+                  { key: 'location', label: 'Location' },
+                  { key: 'description', label: 'What Happened' },
+                  { key: 'injuryDescription', label: 'Injury' },
+                  { key: 'treatmentType', label: 'Treatment' },
+                  { key: 'hospitalized', label: 'Hospitalized' },
+                  { key: 'reportedBy', label: 'Reported By' },
                 ],
-                rows: Object.entries(record).map(([key, value]) => ({
-                  field: key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase()).trim(),
-                  value: String(value ?? '--'),
-                })),
+                rows,
               });
             }
           },

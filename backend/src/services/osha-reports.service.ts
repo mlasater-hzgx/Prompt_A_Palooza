@@ -60,6 +60,43 @@ export async function generateOsha300A(year: number) {
   };
 }
 
+export async function generateAllOsha301(year: number) {
+  const startDate = new Date(year, 0, 1);
+  const endDate = new Date(year, 11, 31);
+
+  const incidents = await prisma.incident.findMany({
+    where: {
+      isOshaRecordable: true,
+      incidentDate: { gte: startDate, lte: endDate },
+    },
+    include: {
+      injuredPersons: true,
+      reportedBy: { select: { name: true, email: true } },
+    },
+    orderBy: { incidentDate: 'asc' },
+  });
+
+  return incidents.map((incident) => {
+    const injured = incident.injuredPersons[0];
+    return {
+      incidentNumber: incident.incidentNumber,
+      employeeName: injured?.name ?? 'N/A',
+      jobTitle: injured?.jobTitle ?? 'N/A',
+      incidentDate: incident.incidentDate.toISOString().split('T')[0],
+      incidentTime: incident.incidentTime?.toISOString().split('T')[1]?.substring(0, 5) ?? 'N/A',
+      location: incident.jobSite ?? incident.locationDescription ?? 'N/A',
+      description: incident.description.substring(0, 200),
+      injuryDescription: injured ? `${injured.injuryType ?? 'Unknown'} to ${injured.bodyPart ?? 'unknown area'}` : 'N/A',
+      treatmentType: injured?.treatmentType ?? 'N/A',
+      treatmentFacility: injured?.treatmentFacility ?? 'N/A',
+      physician: injured?.physician ?? 'N/A',
+      hospitalized: injured?.treatmentType === 'HOSPITALIZATION' ? 'Yes' : 'No',
+      reportedBy: incident.reportedBy.name,
+      reportedDate: incident.reportedDate.toISOString().split('T')[0],
+    };
+  });
+}
+
 export async function generateOsha301(incidentId: string) {
   const incident = await prisma.incident.findUnique({
     where: { id: incidentId },
