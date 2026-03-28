@@ -61,6 +61,9 @@ export async function listInvestigations(
             division: true,
           },
         },
+        leadInvestigator: {
+          select: { id: true, name: true, email: true },
+        },
       },
     }),
     prisma.investigation.count({ where }),
