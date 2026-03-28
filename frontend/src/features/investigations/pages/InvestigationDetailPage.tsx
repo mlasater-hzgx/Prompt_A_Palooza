@@ -39,6 +39,7 @@ import {
   Select,
 } from '@mui/material';
 import { PageContainer } from '../../../components/layout/PageContainer';
+import { apiClient } from '../../../lib/api-client';
 import { useInvestigation, useUpdateInvestigation, useSubmitReview } from '../api/investigations.api';
 import { DIVISIONS } from '../../../config/constants';
 import { colors } from '../../../design-system/tokens/colors';
@@ -165,7 +166,7 @@ function SummaryTab({ investigation }: { investigation: Record<string, unknown> 
             <Divider sx={{ mb: 2 }} />
             <FieldDisplay
               label="Lead Investigator"
-              value={investigation.leadInvestigatorName as string}
+              value={(investigation.leadInvestigator as { name: string } | null)?.name}
             />
             <FieldDisplay
               label="Investigation Team"
@@ -179,8 +180,8 @@ function SummaryTab({ investigation }: { investigation: Record<string, unknown> 
             <FieldDisplay
               label="Division"
               value={
-                investigation.division
-                  ? getLabelForValue(DIVISIONS, investigation.division as string)
+                (investigation.incident as { division?: string } | null)?.division
+                  ? getLabelForValue(DIVISIONS, (investigation.incident as { division: string }).division)
                   : null
               }
             />
@@ -261,7 +262,7 @@ function SummaryTab({ investigation }: { investigation: Record<string, unknown> 
                 <Grid size={{ xs: 12, sm: 4 }}>
                   <FieldDisplay
                     label="Reviewed By"
-                    value={investigation.reviewedByName as string}
+                    value={(investigation.reviewedBy as { name: string } | null)?.name}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 4 }}>
@@ -472,28 +473,43 @@ interface EditDialogProps {
 
 function EditDialog({ open, onClose, investigation, investigationId }: EditDialogProps) {
   const updateInvestigation = useUpdateInvestigation();
+  const [users, setUsers] = useState<Array<{ id: string; name: string }>>([]);
   const [form, setForm] = useState({
     investigationSummary: '',
+    leadInvestigatorId: '',
     rootCauseMethod: '',
     rootCauseSummary: '',
     recommendations: '',
   });
 
+  // Load users for lead investigator dropdown
+  useCallback(() => {
+    apiClient.get('/users?pageSize=50').then(({ data }) => {
+      setUsers((data?.data ?? []) as Array<{ id: string; name: string }>);
+    }).catch(() => {});
+  }, [])();
+
   // Sync form when dialog opens
   const handleOpen = useCallback(() => {
+    const lead = investigation.leadInvestigator as { id: string } | null;
     setForm({
       investigationSummary: (investigation.investigationSummary as string) ?? '',
+      leadInvestigatorId: lead?.id ?? '',
       rootCauseMethod: (investigation.rootCauseMethod as string) ?? '',
       rootCauseSummary: (investigation.rootCauseSummary as string) ?? '',
       recommendations: (investigation.recommendations as string) ?? '',
     });
+    // Load users
+    apiClient.get('/users?pageSize=50').then(({ data }) => {
+      setUsers((data?.data ?? []) as Array<{ id: string; name: string }>);
+    }).catch(() => {});
   }, [investigation]);
 
-  // Reset form when opening
-  useState(() => { handleOpen(); });
-
   const handleSave = async () => {
-    await updateInvestigation.mutateAsync({ id: investigationId, ...form });
+    const payload: Record<string, unknown> = { ...form };
+    if (!payload.leadInvestigatorId) delete payload.leadInvestigatorId;
+    if (!payload.rootCauseMethod) delete payload.rootCauseMethod;
+    await updateInvestigation.mutateAsync({ id: investigationId, ...payload });
     onClose();
   };
 
@@ -504,6 +520,20 @@ function EditDialog({ open, onClose, investigation, investigationId }: EditDialo
       </DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 1 }}>
+          <FormControl fullWidth>
+            <InputLabel>Lead Investigator</InputLabel>
+            <Select
+              label="Lead Investigator"
+              value={form.leadInvestigatorId}
+              onChange={(e) => setForm((prev) => ({ ...prev, leadInvestigatorId: e.target.value }))}
+            >
+              <MenuItem value="">Unassigned</MenuItem>
+              {users.map((u) => (
+                <MenuItem key={u.id} value={u.id}>{u.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
           <TextField
             label="Investigation Summary"
             multiline
@@ -511,7 +541,9 @@ function EditDialog({ open, onClose, investigation, investigationId }: EditDialo
             fullWidth
             value={form.investigationSummary}
             onChange={(e) => setForm((prev) => ({ ...prev, investigationSummary: e.target.value }))}
+            placeholder="Describe the investigation findings..."
           />
+
           <FormControl fullWidth>
             <InputLabel>Root Cause Method</InputLabel>
             <Select
@@ -519,12 +551,13 @@ function EditDialog({ open, onClose, investigation, investigationId }: EditDialo
               value={form.rootCauseMethod}
               onChange={(e) => setForm((prev) => ({ ...prev, rootCauseMethod: e.target.value }))}
             >
-              <MenuItem value="">None</MenuItem>
+              <MenuItem value="">Not Selected</MenuItem>
               <MenuItem value="FIVE_WHY">5-Why Analysis</MenuItem>
               <MenuItem value="FISHBONE">Fishbone / Ishikawa</MenuItem>
               <MenuItem value="BOTH">Both</MenuItem>
             </Select>
           </FormControl>
+
           <TextField
             label="Root Cause Summary"
             multiline
@@ -532,7 +565,9 @@ function EditDialog({ open, onClose, investigation, investigationId }: EditDialo
             fullWidth
             value={form.rootCauseSummary}
             onChange={(e) => setForm((prev) => ({ ...prev, rootCauseSummary: e.target.value }))}
+            placeholder="Summarize the identified root cause(s)..."
           />
+
           <TextField
             label="Recommendations"
             multiline
@@ -540,6 +575,7 @@ function EditDialog({ open, onClose, investigation, investigationId }: EditDialo
             fullWidth
             value={form.recommendations}
             onChange={(e) => setForm((prev) => ({ ...prev, recommendations: e.target.value }))}
+            placeholder="Enter corrective action recommendations..."
           />
         </Box>
       </DialogContent>
