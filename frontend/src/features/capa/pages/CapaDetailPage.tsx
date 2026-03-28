@@ -30,8 +30,11 @@ import {
   PlayArrow as StartIcon,
   CheckCircle as CompleteIcon,
   Verified as VerifyIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
+import { MenuItem, Select } from '@mui/material';
 import { PageContainer } from '../../../components/layout/PageContainer';
+import { apiClient } from '../../../lib/api-client';
 import { useCapa, useStartCapa, useCompleteCapa, useVerifyCapa } from '../api/capa.api';
 import { colors } from '../../../design-system/tokens/colors';
 
@@ -300,6 +303,11 @@ export function Component() {
 
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
   const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState({ title: '', description: '', category: '', priority: '', assignedToId: '' });
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [users, setUsers] = useState<Array<{ id: string; name: string }>>([]);
 
   const capa: Record<string, unknown> = data?.data ?? data ?? {};
   const status = (capa.status as string) ?? '';
@@ -382,6 +390,30 @@ export function Component() {
           >
             Back
           </Button>
+
+          {(status === 'OPEN' || status === 'IN_PROGRESS' || status === 'OVERDUE') && (
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<EditIcon />}
+              onClick={() => {
+                setEditForm({
+                  title: (capa.title as string) ?? '',
+                  description: (capa.description as string) ?? '',
+                  category: (capa.category as string) ?? '',
+                  priority: (capa.priority as string) ?? '',
+                  assignedToId: (capa.assignedTo as { id: string } | null)?.id ?? (capa.assignedToId as string) ?? '',
+                });
+                setEditError(null);
+                apiClient.get('/users?pageSize=50').then(({ data: d }) => {
+                  setUsers((d?.data ?? []) as Array<{ id: string; name: string }>);
+                }).catch(() => {});
+                setEditDialogOpen(true);
+              }}
+            >
+              Edit
+            </Button>
+          )}
 
           {status === 'OPEN' && (
             <Button
@@ -700,6 +732,94 @@ export function Component() {
         onSubmit={handleVerify}
         isPending={verifyCapa.isPending}
       />
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ fontFamily: 'Oswald, sans-serif', color: colors.action.navyBlue }}>
+          Edit CAPA
+        </DialogTitle>
+        <DialogContent>
+          {editError && <Alert severity="error" sx={{ mb: 2, mt: 1 }}>{editError}</Alert>}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 1 }}>
+            <TextField
+              label="Title"
+              fullWidth
+              value={editForm.title}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, title: e.target.value }))}
+            />
+            <TextField
+              label="Description"
+              fullWidth
+              multiline
+              rows={3}
+              value={editForm.description}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))}
+            />
+            <FormControl fullWidth>
+              <InputLabel>Category</InputLabel>
+              <Select
+                label="Category"
+                value={editForm.category}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, category: e.target.value as string }))}
+              >
+                {CAPA_CATEGORIES.map((c) => (
+                  <MenuItem key={c.value} value={c.value}>{c.label}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth>
+              <InputLabel>Priority</InputLabel>
+              <Select
+                label="Priority"
+                value={editForm.priority}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, priority: e.target.value as string }))}
+              >
+                {CAPA_PRIORITIES.map((p) => (
+                  <MenuItem key={p.value} value={p.value}>{p.label}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth>
+              <InputLabel>Assigned To</InputLabel>
+              <Select
+                label="Assigned To"
+                value={editForm.assignedToId}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, assignedToId: e.target.value as string }))}
+              >
+                <MenuItem value="">Unassigned</MenuItem>
+                {users.map((u) => (
+                  <MenuItem key={u.id} value={u.id}>{u.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditDialogOpen(false)} disabled={editSaving}>Cancel</Button>
+          <Button
+            variant="contained"
+            disabled={editSaving}
+            onClick={async () => {
+              try {
+                setEditSaving(true);
+                setEditError(null);
+                const payload: Record<string, unknown> = { ...editForm };
+                if (!payload.assignedToId) delete payload.assignedToId;
+                await apiClient.put(`/capas/${capaId}`, payload);
+                setEditDialogOpen(false);
+                // Refetch
+                window.location.reload();
+              } catch (err) {
+                setEditError(err instanceof Error ? err.message : 'Failed to save.');
+              } finally {
+                setEditSaving(false);
+              }
+            }}
+          >
+            {editSaving ? 'Saving...' : 'Save'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </PageContainer>
   );
 }
