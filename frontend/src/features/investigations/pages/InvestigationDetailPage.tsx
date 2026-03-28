@@ -478,39 +478,49 @@ function EditDialog({ open, onClose, investigation, investigationId }: EditDialo
   const [form, setForm] = useState({
     investigationSummary: '',
     leadInvestigatorId: '',
+    investigationTeam: '',
     rootCauseMethod: '',
     rootCauseSummary: '',
     recommendations: '',
   });
 
-  // Load users once
+  // Load users and sync form when dialog opens
   useEffect(() => {
+    if (!open) return;
+
+    // Load users for dropdown
     apiClient.get('/users?pageSize=50').then(({ data }) => {
       setUsers((data?.data ?? []) as Array<{ id: string; name: string }>);
     }).catch(() => {});
-  }, []);
 
-  // Sync form when dialog opens
-  useEffect(() => {
-    if (open) {
-      const lead = investigation.leadInvestigator as { id: string } | null;
-      setForm({
-        investigationSummary: (investigation.investigationSummary as string) ?? '',
-        leadInvestigatorId: lead?.id ?? '',
-        rootCauseMethod: (investigation.rootCauseMethod as string) ?? '',
-        rootCauseSummary: (investigation.rootCauseSummary as string) ?? '',
-        recommendations: (investigation.recommendations as string) ?? '',
-      });
-      setSaveError(null);
-    }
+    // Populate form from investigation data
+    const lead = investigation.leadInvestigator as { id: string } | null;
+    const team = investigation.investigationTeam as string[] | null;
+    setForm({
+      investigationSummary: (investigation.investigationSummary as string) ?? '',
+      leadInvestigatorId: lead?.id ?? '',
+      investigationTeam: (team ?? []).join(', '),
+      rootCauseMethod: (investigation.rootCauseMethod as string) ?? '',
+      rootCauseSummary: (investigation.rootCauseSummary as string) ?? '',
+      recommendations: (investigation.recommendations as string) ?? '',
+    });
+    setSaveError(null);
   }, [open, investigation]);
 
   const handleSave = async () => {
     try {
       setSaveError(null);
-      const payload: Record<string, unknown> = { ...form };
-      if (!payload.leadInvestigatorId) delete payload.leadInvestigatorId;
-      if (!payload.rootCauseMethod) delete payload.rootCauseMethod;
+      const payload: Record<string, unknown> = {
+        investigationSummary: form.investigationSummary,
+        rootCauseSummary: form.rootCauseSummary,
+        recommendations: form.recommendations,
+        investigationTeam: form.investigationTeam
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean),
+      };
+      if (form.leadInvestigatorId) payload.leadInvestigatorId = form.leadInvestigatorId;
+      if (form.rootCauseMethod) payload.rootCauseMethod = form.rootCauseMethod;
       await updateInvestigation.mutateAsync({ id: investigationId, ...payload });
       onClose();
     } catch (err) {
@@ -541,6 +551,15 @@ function EditDialog({ open, onClose, investigation, investigationId }: EditDialo
               ))}
             </Select>
           </FormControl>
+
+          <TextField
+            label="Investigation Team"
+            fullWidth
+            value={form.investigationTeam}
+            onChange={(e) => setForm((prev) => ({ ...prev, investigationTeam: e.target.value }))}
+            placeholder="Enter team member names, separated by commas"
+            helperText="Comma-separated list of team member names"
+          />
 
           <TextField
             label="Investigation Summary"
