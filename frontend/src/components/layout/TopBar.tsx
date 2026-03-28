@@ -1,5 +1,10 @@
-import { Box, IconButton, Typography, useMediaQuery, useTheme } from '@mui/material';
-import { Menu as MenuIcon, Notifications as NotifIcon } from '@mui/icons-material';
+import { Box, IconButton, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material';
+import {
+  Menu as MenuIcon,
+  Notifications as NotifIcon,
+  DarkMode as DarkModeIcon,
+  LightMode as LightModeIcon,
+} from '@mui/icons-material';
 import { SyncStatusIndicator } from '../feedback/SyncStatusIndicator';
 import { DevUserSwitcher } from '../auth/DevUserSwitcher';
 import { useUiStore } from '../../store/ui.store';
@@ -9,7 +14,7 @@ import { ROLE_LABELS, type RoleName } from '../../config/roles';
 export function TopBar() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { setSidebarMobileOpen } = useUiStore();
+  const { setSidebarMobileOpen, themeMode, toggleTheme } = useUiStore();
   const { user } = useAuthStore();
 
   return (
@@ -37,6 +42,12 @@ export function TopBar() {
       <Box sx={{ flexGrow: 1 }} />
 
       <SyncStatusIndicator />
+
+      <Tooltip title={themeMode === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}>
+        <IconButton onClick={toggleTheme} aria-label="Toggle dark mode">
+          {themeMode === 'light' ? <DarkModeIcon /> : <LightModeIcon sx={{ color: '#FFD100' }} />}
+        </IconButton>
+      </Tooltip>
 
       <IconButton aria-label="Notifications">
         <NotifIcon />
@@ -66,7 +77,7 @@ export function TopBar() {
               <Typography variant="body1" sx={{ fontWeight: 500, lineHeight: 1.2 }}>
                 {user.name}
               </Typography>
-              <Typography sx={{ fontSize: '0.68rem', color: '#A7A9AC', lineHeight: 1.2 }}>
+              <Typography sx={{ fontSize: '0.68rem', color: 'text.secondary', lineHeight: 1.2 }}>
                 {ROLE_LABELS[user.role as RoleName] ?? user.role}
               </Typography>
             </Box>
