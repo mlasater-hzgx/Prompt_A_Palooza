@@ -540,13 +540,13 @@ export function Component() {
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <FieldDisplay
                     label="Assigned To"
-                    value={capa.assignedToName as string}
+                    value={(capa.assignedTo as { name: string } | null)?.name}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <FieldDisplay
                     label="Incident"
-                    value={capa.incidentNumber as string}
+                    value={(capa.incident as { incidentNumber: string } | null)?.incidentNumber}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
@@ -689,7 +689,7 @@ export function Component() {
                   <Grid size={{ xs: 12, sm: 4 }}>
                     <FieldDisplay
                       label="Verified By"
-                      value={capa.verifiedByName as string}
+                      value={(capa.verifiedBy as { name: string } | null)?.name}
                     />
                   </Grid>
                   <Grid size={{ xs: 12, sm: 4 }}>
