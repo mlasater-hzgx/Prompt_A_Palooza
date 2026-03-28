@@ -87,9 +87,60 @@ export function Component() {
       generateReport.mutate(
         { year: selectedYear, reportType },
         {
-          onSuccess: (data) => {
-            const result = (data as { data: ReportResult }).data ?? (data as ReportResult);
-            setReportData(result);
+          onSuccess: (rawData) => {
+            // API returns { data: [...] } for 300, { data: { ...summary } } for 300A
+            const payload = (rawData as any)?.data ?? rawData;
+
+            if (reportType === 'OSHA_300') {
+              const rows = Array.isArray(payload) ? payload : [];
+              setReportData({
+                title: `OSHA 300 Log - ${selectedYear}`,
+                columns: [
+                  { key: 'caseNumber', label: 'Case #' },
+                  { key: 'employeeName', label: 'Employee' },
+                  { key: 'jobTitle', label: 'Job Title' },
+                  { key: 'date', label: 'Date' },
+                  { key: 'location', label: 'Location' },
+                  { key: 'description', label: 'Description' },
+                  { key: 'death', label: 'Death' },
+                  { key: 'daysAway', label: 'Days Away' },
+                  { key: 'daysRestricted', label: 'Days Restricted' },
+                  { key: 'injuryType', label: 'Injury Type' },
+                  { key: 'bodyPart', label: 'Body Part' },
+                ],
+                rows,
+              });
+            } else if (reportType === 'OSHA_300A') {
+              const summary = Array.isArray(payload) ? {} : payload;
+              setReportData({
+                title: `OSHA 300A Summary - ${selectedYear}`,
+                columns: [
+                  { key: 'metric', label: 'Metric' },
+                  { key: 'value', label: 'Value' },
+                ],
+                rows: Object.entries(summary)
+                  .filter(([k]) => k !== 'year')
+                  .map(([key, value]) => ({
+                    metric: key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase()).trim(),
+                    value: value as string | number,
+                  })),
+                summary,
+              });
+            } else {
+              // OSHA 301 - single incident report
+              const record = Array.isArray(payload) ? {} : payload;
+              setReportData({
+                title: `OSHA 301 - ${record.incidentNumber ?? 'Incident Report'}`,
+                columns: [
+                  { key: 'field', label: 'Field' },
+                  { key: 'value', label: 'Value' },
+                ],
+                rows: Object.entries(record).map(([key, value]) => ({
+                  field: key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase()).trim(),
+                  value: String(value ?? '--'),
+                })),
+              });
+            }
           },
           onError: () => {
             setReportData(null);
