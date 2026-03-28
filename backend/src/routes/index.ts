@@ -14,6 +14,7 @@ import { oshaRoutes } from './osha.routes';
 import { dashboardRoutes } from './dashboard.routes';
 import { analyticsRoutes } from './analytics.routes';
 import { reportRoutes } from './reports.routes';
+import { auditLogRoutes } from './audit-log.routes';
 
 const router = Router();
 
@@ -55,6 +56,9 @@ router.use('/analytics', analyticsRoutes);
 
 // Reports (OSHA 300/300A/301)
 router.use('/reports', reportRoutes);
+
+// Audit Log (Admin only)
+router.use('/audit-logs', auditLogRoutes);
 
 // API root
 router.get('/', (_req, res) => {

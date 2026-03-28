@@ -29,6 +29,7 @@ import {
   Business as ProjectsIcon,
   Tune as ConfigIcon,
   NotificationsActive as NotifRulesIcon,
+  Receipt as AuditLogIcon,
   ChevronLeft as CollapseIcon,
   ChevronRight as ExpandIcon,
   ExpandMore as ExpandMoreIcon,
@@ -62,6 +63,7 @@ const navItems: NavItem[] = [
       { label: 'Hours Worked', path: '/admin/hours-worked', icon: <HoursIcon />, section: 'admin' },
       { label: 'Notifications', path: '/admin/notifications', icon: <NotifRulesIcon />, section: 'admin' },
       { label: 'System Config', path: '/admin/settings', icon: <ConfigIcon />, section: 'admin' },
+      { label: 'Transaction Log', path: '/admin/audit-log', icon: <AuditLogIcon />, section: 'admin' },
     ],
   },
 ];

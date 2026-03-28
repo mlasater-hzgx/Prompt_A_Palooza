@@ -43,6 +43,7 @@ const router = createBrowserRouter([
       { path: 'admin/projects', lazy: () => import('../features/admin/pages/ProjectManagementPage') },
       { path: 'admin/hours-worked', lazy: () => import('../features/admin/pages/HoursWorkedPage') },
       { path: 'admin/settings', lazy: () => import('../features/admin/pages/SystemConfigPage') },
+      { path: 'admin/audit-log', lazy: () => import('../features/admin/pages/AuditLogPage') },
     ],
   },
   // Auth routes (outside AppShell)
