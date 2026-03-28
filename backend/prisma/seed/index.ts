@@ -13,6 +13,7 @@ import { seedFishbone } from './data/fishbone';
 import { seedContributingFactors } from './data/contributing-factors';
 import { seedCapas } from './data/capas';
 import { seedRecurrenceLinks } from './data/recurrence-links';
+import { seedAuditLogs } from './data/audit-logs';
 import { seedHoursWorked } from './data/hours-worked';
 
 const prisma = new PrismaClient();
@@ -89,6 +90,9 @@ async function main() {
 
   await seedHoursWorked(prisma);
   console.log('✓ hours worked');
+
+  const auditLogs = await seedAuditLogs(prisma, users, incidents, investigations, capas);
+  console.log(`✓ ${auditLogs.length} audit log entries`);
 
   console.log('\n🌱 Seed complete!');
 }
