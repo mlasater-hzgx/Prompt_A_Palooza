@@ -55,12 +55,17 @@ const oswald: React.CSSProperties = { fontFamily: 'Oswald, sans-serif' };
 
 /* ---------- API hook ---------- */
 
+const REPORT_ENDPOINTS: Record<ReportType, string> = {
+  OSHA_300: '/reports/osha-300',
+  OSHA_300A: '/reports/osha-300a',
+  OSHA_301: '/reports/osha-301',
+};
+
 function useGenerateReport() {
   return useMutation({
     mutationFn: async ({ year, reportType }: { year: number; reportType: ReportType }) => {
-      const { data } = await apiClient.get(
-        `/reports/osha/${reportType.toLowerCase()}?year=${year}`,
-      );
+      const endpoint = REPORT_ENDPOINTS[reportType];
+      const { data } = await apiClient.get(`${endpoint}?year=${year}`);
       return data as { data: ReportResult } | ReportResult;
     },
   });
