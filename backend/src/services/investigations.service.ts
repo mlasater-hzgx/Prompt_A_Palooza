@@ -5,6 +5,7 @@ import {
   RootCauseMethod,
   ReviewAction,
   FishboneCategory,
+  Division,
 } from '@prisma/client';
 import { NotFoundError, AppError } from '../utils/errors';
 import { getInvestigationTargetDate } from '../utils/date';
@@ -17,6 +18,7 @@ interface InvestigationFilters {
   status?: string;
   leadInvestigatorId?: string;
   overdue?: boolean;
+  division?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -39,6 +41,9 @@ export async function listInvestigations(
   if (filters.overdue) {
     where.targetCompletionDate = { lt: new Date() };
     where.status = { in: ['NOT_STARTED', 'IN_PROGRESS', 'PENDING_REVIEW'] };
+  }
+  if (filters.division) {
+    where.incident = { division: filters.division as Division };
   }
 
   const [investigations, count] = await Promise.all([

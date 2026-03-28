@@ -85,6 +85,7 @@ export const contributingFactorSchema = z.object({
 export const investigationQuerySchema = z.object({
   status: z.string().optional(),
   leadInvestigatorId: z.string().optional(),
+  division: z.string().optional(),
   overdue: z
     .string()
     .transform((v) => v === 'true')
