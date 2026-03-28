@@ -1,4 +1,4 @@
-import { useState, useCallback, type SyntheticEvent } from 'react';
+import { useState, useCallback, useEffect, type SyntheticEvent } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import {
   Alert,
@@ -474,6 +474,7 @@ interface EditDialogProps {
 function EditDialog({ open, onClose, investigation, investigationId }: EditDialogProps) {
   const updateInvestigation = useUpdateInvestigation();
   const [users, setUsers] = useState<Array<{ id: string; name: string }>>([]);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [form, setForm] = useState({
     investigationSummary: '',
     leadInvestigatorId: '',
@@ -482,43 +483,50 @@ function EditDialog({ open, onClose, investigation, investigationId }: EditDialo
     recommendations: '',
   });
 
-  // Load users for lead investigator dropdown
-  useCallback(() => {
+  // Load users once
+  useEffect(() => {
     apiClient.get('/users?pageSize=50').then(({ data }) => {
       setUsers((data?.data ?? []) as Array<{ id: string; name: string }>);
     }).catch(() => {});
-  }, [])();
+  }, []);
 
   // Sync form when dialog opens
-  const handleOpen = useCallback(() => {
-    const lead = investigation.leadInvestigator as { id: string } | null;
-    setForm({
-      investigationSummary: (investigation.investigationSummary as string) ?? '',
-      leadInvestigatorId: lead?.id ?? '',
-      rootCauseMethod: (investigation.rootCauseMethod as string) ?? '',
-      rootCauseSummary: (investigation.rootCauseSummary as string) ?? '',
-      recommendations: (investigation.recommendations as string) ?? '',
-    });
-    // Load users
-    apiClient.get('/users?pageSize=50').then(({ data }) => {
-      setUsers((data?.data ?? []) as Array<{ id: string; name: string }>);
-    }).catch(() => {});
-  }, [investigation]);
+  useEffect(() => {
+    if (open) {
+      const lead = investigation.leadInvestigator as { id: string } | null;
+      setForm({
+        investigationSummary: (investigation.investigationSummary as string) ?? '',
+        leadInvestigatorId: lead?.id ?? '',
+        rootCauseMethod: (investigation.rootCauseMethod as string) ?? '',
+        rootCauseSummary: (investigation.rootCauseSummary as string) ?? '',
+        recommendations: (investigation.recommendations as string) ?? '',
+      });
+      setSaveError(null);
+    }
+  }, [open, investigation]);
 
   const handleSave = async () => {
-    const payload: Record<string, unknown> = { ...form };
-    if (!payload.leadInvestigatorId) delete payload.leadInvestigatorId;
-    if (!payload.rootCauseMethod) delete payload.rootCauseMethod;
-    await updateInvestigation.mutateAsync({ id: investigationId, ...payload });
-    onClose();
+    try {
+      setSaveError(null);
+      const payload: Record<string, unknown> = { ...form };
+      if (!payload.leadInvestigatorId) delete payload.leadInvestigatorId;
+      if (!payload.rootCauseMethod) delete payload.rootCauseMethod;
+      await updateInvestigation.mutateAsync({ id: investigationId, ...payload });
+      onClose();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to save. Please try again.');
+    }
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth onTransitionEnter={handleOpen}>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ fontFamily: 'Oswald, sans-serif', color: colors.action.navyBlue }}>
         Edit Investigation
       </DialogTitle>
       <DialogContent>
+        {saveError && (
+          <Alert severity="error" sx={{ mb: 2, mt: 1 }}>{saveError}</Alert>
+        )}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 1 }}>
           <FormControl fullWidth>
             <InputLabel>Lead Investigator</InputLabel>
