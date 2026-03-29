@@ -30,7 +30,7 @@ export function KpiCard({ title, value, trend, trendValue, subtitle, onClick }: 
             fontSize: '0.72rem',
             fontWeight: 600,
             textTransform: 'uppercase',
-            color: '#6D6E71',
+            color: 'text.secondary',
             letterSpacing: '0.03em',
             mb: 0.5,
           }}
@@ -43,7 +43,7 @@ export function KpiCard({ title, value, trend, trendValue, subtitle, onClick }: 
               fontFamily: "'Oswald', sans-serif",
               fontSize: '2rem',
               fontWeight: 700,
-              color: '#000',
+              color: 'text.primary',
               lineHeight: 1,
             }}
           >
@@ -61,7 +61,7 @@ export function KpiCard({ title, value, trend, trendValue, subtitle, onClick }: 
           )}
         </Box>
         {subtitle && (
-          <Typography sx={{ fontSize: '0.72rem', color: '#A7A9AC', mt: 0.5 }}>
+          <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary', mt: 0.5 }}>
             {subtitle}
           </Typography>
         )}
