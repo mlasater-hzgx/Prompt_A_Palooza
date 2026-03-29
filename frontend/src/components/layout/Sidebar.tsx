@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
+import herzogLogo from '../../assets/images/herzog-logo-white.png';
 import {
   Box,
   Collapse,
@@ -98,18 +99,16 @@ export function Sidebar() {
     >
       {/* Logo */}
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Typography
+        <Box
+          component="img"
+          src={herzogLogo}
+          alt="Herzog"
           sx={{
-            fontFamily: "'Oswald', sans-serif",
-            fontWeight: 700,
-            color: '#FFD100', // Herzog Gold
-            fontSize: '1.4rem',
-            letterSpacing: '0.08em',
+            height: 28,
+            width: 'auto',
             display: sidebarCollapsed && !isMobile ? 'none' : 'block',
           }}
-        >
-          HERZOG
-        </Typography>
+        />
         {!isMobile && (
           <IconButton onClick={toggleSidebar} sx={{ color: '#A7A9AC' }}>
             {sidebarCollapsed ? <ExpandIcon /> : <CollapseIcon />}
