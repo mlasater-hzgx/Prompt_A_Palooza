@@ -291,12 +291,14 @@ export function Component() {
                         <TableRow
                           key={capa.id}
                           hover
-                          sx={{
+                          sx={(theme) => ({
                             cursor: 'pointer',
                             backgroundColor: overdue
-                              ? colors.semantic.errorLight
+                              ? theme.palette.mode === 'dark'
+                                ? 'rgba(171, 45, 36, 0.15)'
+                                : colors.semantic.errorLight
                               : undefined,
-                          }}
+                          })}
                           onClick={() => handleRowClick(capa.id)}
                         >
                           <TableCell>
