@@ -141,20 +141,20 @@ function KpiCard({ kpi }: { kpi: KpiData }) {
       <CardContent>
         <Typography
           variant="overline"
-          sx={{ color: colors.brand.midGray, letterSpacing: 1, fontSize: '0.7rem' }}
+          sx={{ color: 'text.secondary', letterSpacing: 1, fontSize: '0.7rem' }}
         >
           {kpi.label}
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mt: 0.5 }}>
           <Typography
-            sx={{ ...oswald, fontSize: '2rem', fontWeight: 700, color: colors.action.navyBlue }}
+            sx={{ ...oswald, fontSize: '2rem', fontWeight: 700, color: 'text.primary' }}
           >
             {kpi.value}
           </Typography>
           <TrendIndicator trend={kpi.trend} label={kpi.trendLabel} />
         </Box>
         {kpi.benchmark !== undefined && (
-          <Typography variant="caption" sx={{ color: colors.brand.midGray }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
             Industry benchmark: {kpi.benchmark}
           </Typography>
         )}
@@ -174,12 +174,12 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
       <CardContent>
         <Typography
           variant="overline"
-          sx={{ color: colors.brand.midGray, letterSpacing: 1, fontSize: '0.7rem' }}
+          sx={{ color: 'text.secondary', letterSpacing: 1, fontSize: '0.7rem' }}
         >
           {label}
         </Typography>
         <Typography
-          sx={{ ...oswald, fontSize: '1.75rem', fontWeight: 700, color: colors.action.navyBlue, mt: 0.5 }}
+          sx={{ ...oswald, fontSize: '1.75rem', fontWeight: 700, color: 'text.primary', mt: 0.5 }}
         >
           {value}
         </Typography>
